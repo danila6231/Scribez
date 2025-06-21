@@ -118,6 +118,7 @@ body {
   flex: 1;
   padding: 32px;
   overflow-y: auto;
+  background-color: #f0f2f5;
 
   --page-height: 1056px; /* Approx. 11in at 96dpi */
   --page-spacing: 24px;
@@ -126,6 +127,7 @@ body {
 .editor-content .ContentEditable__root {
   position: relative;
   z-index: 1;
+  min-height: 1056px; /* Ensure at least one full page shows */
   outline: none;
   font-size: 16px;
   line-height: 1.6;
