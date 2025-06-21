@@ -25,19 +25,18 @@ body {
   display: flex;
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
 .editor-section {
   flex: 1;
-  background-color: white;
-  border-right: 1px solid #e0e0e0;
+  background-color: #f0f2f5;
   display: flex;
   flex-direction: column;
   min-width: 400px;
 }
 
 .chat-section {
-  width: 400px;
   background-color: #fafafa;
   display: flex;
   flex-direction: column;
@@ -117,15 +116,54 @@ body {
 
 .editor-content {
   flex: 1;
-  padding: 24px;
+  padding: 32px;
   overflow-y: auto;
+
+  --page-height: 1056px; /* Approx. 11in at 96dpi */
+  --page-spacing: 24px;
 }
 
 .editor-content .ContentEditable__root {
-  min-height: 500px;
+  position: relative;
+  z-index: 1;
   outline: none;
   font-size: 16px;
   line-height: 1.6;
+  
+  padding: 80px;
+  max-width: 850px;
+  margin: 0 auto;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+  /* Create the repeating page background */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #fff 0,
+    #fff var(--page-height),
+    transparent var(--page-height),
+    transparent calc(var(--page-height) + var(--page-spacing))
+  );
+  background-size: 100% calc(var(--page-height) + var(--page-spacing));
+
+  /* Mask the text to hide it in the gaps between pages */
+  -webkit-mask-image: repeating-linear-gradient(
+    to bottom,
+    black 0,
+    black var(--page-height),
+    transparent var(--page-height),
+    transparent calc(var(--page-height) + var(--page-spacing))
+  );
+  -webkit-mask-size: 100% calc(var(--page-height) + var(--page-spacing));
+
+  mask-image: repeating-linear-gradient(
+    to bottom,
+    black 0,
+    black var(--page-height),
+    transparent var(--page-height),
+    transparent calc(var(--page-height) + var(--page-spacing))
+  );
+  mask-size: 100% calc(var(--page-height) + var(--page-spacing));
 }
 
 /* Chat Styles */
@@ -163,6 +201,14 @@ body {
   animation: fadeIn 0.3s ease-in;
 }
 
+.chat-message.user {
+  justify-content: flex-end;
+}
+
+.chat-message.assistant {
+  justify-content: flex-start;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -174,31 +220,16 @@ body {
   }
 }
 
-.message-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: #e0e0e0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.message-avatar.user {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.message-avatar.assistant {
-  background-color: #2196F3;
-  color: white;
-}
-
 .message-content {
-  flex: 1;
+  max-width: 80%;
+}
+
+.chat-message.user .message-content {
+  text-align: right;
+}
+
+.chat-message.assistant .message-content {
+  text-align: left;
 }
 
 .message-role {
@@ -211,11 +242,21 @@ body {
 .message-text {
   font-size: 14px;
   line-height: 1.5;
-  color: #333;
-  background-color: white;
   padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.chat-message.user .message-text {
+  background-color: #2196F3;
+  color: white;
+}
+
+.chat-message.assistant .message-text {
+  background-color: #f5f5f5;
+  color: #333;
 }
 
 .message-timestamp {
@@ -312,6 +353,43 @@ body {
   position: absolute;
   pointer-events: none;
   user-select: none;
+  top: 80px;
+  left: 80px;
+  width: calc(100% - 160px);
+  z-index: 2;
+}
+
+/* Resize Handle */
+.resize-handle {
+  width: 4px;
+  background-color: #e0e0e0;
+  cursor: col-resize;
+  position: relative;
+  transition: background-color 0.2s;
+  z-index: 10;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 24px;
+  background-color: #999;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.resize-handle:hover,
+.resize-handle.dragging {
+  background-color: #2196F3;
+}
+
+.resize-handle:hover::before,
+.resize-handle.dragging::before {
+  background-color: white;
 }
 
 /* Responsive Design */
@@ -327,7 +405,11 @@ body {
   }
   
   .chat-section {
-    width: 100%;
+    width: 100% !important;
     min-width: 100%;
+  }
+
+  .resize-handle {
+    display: none;
   }
 } 

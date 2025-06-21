@@ -5,20 +5,19 @@ function ChatMessage({ message }) {
   const timestamp = message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : '';
 
   return (
-    <div className="chat-message">
-      <div className={`message-avatar ${message.role}`}>
-        {isUser ? 'U' : 'AI'}
-      </div>
+    <div className={`chat-message ${message.role}`}>
       <div className="message-content">
-        <div className="message-role">
-          {isUser ? 'You' : 'AI Assistant'}
-        </div>
+        {!isUser && (
+          <div className="message-role">
+            AI Assistant
+          </div>
+        )}
         <div className="message-text">
           {message.content}
         </div>
         {timestamp && (
           <div className="message-timestamp">
-            {timestamp}
+            {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
           </div>
         )}
       </div>

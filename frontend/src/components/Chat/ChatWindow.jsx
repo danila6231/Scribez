@@ -96,8 +96,7 @@ function ChatWindow() {
         )}
         
         {isLoading && (
-          <div className="chat-message">
-            <div className="message-avatar assistant">AI</div>
+          <div className="chat-message assistant">
             <div className="message-content">
               <div className="message-role">AI Assistant</div>
               <div className="loading-dots">

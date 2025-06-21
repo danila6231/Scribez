@@ -220,13 +220,35 @@ function Toolbar() {
 function Editor() {
   const onChange = (editorState, editor) => {
     // Handle editor changes here if needed
-    // For now, we'll just log to console in development
     if (process.env.NODE_ENV === 'development') {
       editorState.read(() => {
         const root = $getRoot();
         console.log('Editor state:', root.getTextContent());
       });
     }
+    
+    // Dynamically adjust editor height to snap to page-like increments
+    editor.update(() => {
+      const rootElement = editor.getRootElement();
+      if (rootElement) {
+        const pageHeight = 1056; // From CSS --page-height
+        const pageSpacing = 24;  // From CSS --page-spacing
+        const pageWithSpacing = pageHeight + pageSpacing;
+
+        const scrollHeight = rootElement.scrollHeight;
+        
+        // Calculate the number of pages needed to contain the content
+        const numPages = Math.max(1, Math.ceil(scrollHeight / pageWithSpacing));
+
+        // Calculate the total pixel height required for these pages
+        const newHeight = (numPages * pageWithSpacing) - pageSpacing;
+
+        // Apply the new height to the editor container
+        if (rootElement.style.height !== `${newHeight}px`) {
+          rootElement.style.height = `${newHeight}px`;
+        }
+      }
+    });
   };
 
   return (
