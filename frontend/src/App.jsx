@@ -30,7 +30,7 @@ function LandingPage() {
             {/*<button className="nav-button secondary">About</button>
             <button className="nav-button secondary">Help</button>*/}
             <SignedOut>
-              <SignInButton mode="modal" forceRedirectUrl="/editor">
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
                 <button className="nav-button primary">Sign in</button>
               </SignInButton>
             </SignedOut>
@@ -55,7 +55,7 @@ function LandingPage() {
             </p>
             <div className="hero-buttons">
               <SignedOut>
-                <SignInButton mode="modal" forceRedirectUrl="/editor">
+                <SignInButton mode="modal" forceRedirectUrl="/dashboard">
                   <button className="cta-button primary">
                     Start writing for free
                   </button>
@@ -153,12 +153,19 @@ function ProtectedEditor() {
     </SignedIn>
   );
 }
-
+function DashBoard(){
+  return(
+    <div>
+      <h1>Projects</h1>
+    </div>
+  )
+}
 function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/editor" element={<ProtectedEditor />} />
+      <Route path="/dashboard" element={<DashBoard />} />
     </Routes>
   );
 }
