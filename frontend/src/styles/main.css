@@ -81,6 +81,17 @@ body {
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.toolbar-button svg {
+  width: 16px;
+  height: 16px;
+  color: #333;
 }
 
 .toolbar-button:hover {
@@ -89,8 +100,13 @@ body {
 }
 
 .toolbar-button.active {
-  background-color: #e0e0e0;
-  border-color: #999;
+  background-color: #e3f2fd;
+  border-color: #2196F3;
+  color: #2196F3;
+}
+
+.toolbar-button.active svg {
+  color: #2196F3;
 }
 
 .toolbar-divider {

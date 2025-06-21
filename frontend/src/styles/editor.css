@@ -4,6 +4,70 @@
   margin: 0 0 15px 0;
 }
 
+/* Text Alignment Classes */
+.ltr {
+  text-align: left;
+}
+
+.rtl {
+  text-align: right;
+}
+
+.center {
+  text-align: center;
+}
+
+.justify {
+  text-align: justify;
+}
+
+/* Apply alignment to all text elements */
+.editor-paragraph.ltr,
+.editor-heading-h1.ltr,
+.editor-heading-h2.ltr,
+.editor-heading-h3.ltr,
+.editor-heading-h4.ltr,
+.editor-heading-h5.ltr,
+.editor-quote.ltr,
+.editor-list-ol.ltr,
+.editor-list-ul.ltr {
+  text-align: left;
+}
+
+.editor-paragraph.center,
+.editor-heading-h1.center,
+.editor-heading-h2.center,
+.editor-heading-h3.center,
+.editor-heading-h4.center,
+.editor-heading-h5.center,
+.editor-quote.center,
+.editor-list-ol.center,
+.editor-list-ul.center {
+  text-align: center;
+}
+
+.editor-paragraph.rtl,
+.editor-heading-h1.rtl,
+.editor-heading-h2.rtl,
+.editor-heading-h3.rtl,
+.editor-heading-h4.rtl,
+.editor-heading-h5.rtl,
+.editor-quote.rtl,
+.editor-list-ol.rtl,
+.editor-list-ul.rtl {
+  text-align: right;
+}
+
+.editor-paragraph.justify,
+.editor-heading-h1.justify,
+.editor-heading-h2.justify,
+.editor-heading-h3.justify,
+.editor-heading-h4.justify,
+.editor-heading-h5.justify,
+.editor-quote.justify {
+  text-align: justify;
+}
+
 .editor-heading-h1 {
   font-size: 32px;
   font-weight: 700;
@@ -93,6 +157,12 @@
 
 .editor-text-underlineStrikethrough {
   text-decoration: underline line-through;
+}
+
+.editor-text-highlight {
+  background-color: #ffeb3b;
+  padding: 2px 0;
+  border-radius: 2px;
 }
 
 .editor-text-code {
