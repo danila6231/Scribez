@@ -1,7 +1,12 @@
 import React from 'react';
 import Layout from './components/Layout';
 import { Routes, Route, Link } from 'react-router-dom';
-  
+import { 
+  SignedIn, 
+  SignedOut, 
+  SignInButton, 
+  UserButton 
+} from '@clerk/clerk-react';
 
 function WordEditor() {
   return <Layout />;
@@ -24,7 +29,14 @@ function LandingPage() {
           <div className="nav-right">
             {/*<button className="nav-button secondary">About</button>
             <button className="nav-button secondary">Help</button>*/}
-            <button className="nav-button primary">Sign in</button>
+            <SignedOut>
+              <SignInButton mode="modal" forceRedirectUrl="/editor">
+                <button className="nav-button primary">Sign in</button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
           </div>
         </div>
       </header>
@@ -42,9 +54,18 @@ function LandingPage() {
               Write, edit, and collaborate seamlessly.
             </p>
             <div className="hero-buttons">
-              <Link to="/editor" className="cta-button primary">
-                Start writing for free
-              </Link>
+              <SignedOut>
+                <SignInButton mode="modal" forceRedirectUrl="/editor">
+                  <button className="cta-button primary">
+                    Start writing for free
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <Link to="/editor" className="cta-button primary">
+                  Go to Editor
+                </Link>
+              </SignedIn>
             </div>
           </div>
           
@@ -123,11 +144,21 @@ function LandingPage() {
   );
 }
 
+
+// Protected Route Component
+function ProtectedEditor() {
+  return (
+    <SignedIn>
+      <WordEditor />
+    </SignedIn>
+  );
+}
+
 function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/editor" element={<WordEditor />} />
+      <Route path="/editor" element={<ProtectedEditor />} />
     </Routes>
   );
 }

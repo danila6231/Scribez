@@ -464,7 +464,7 @@ body {
 }
 
 .nav-button {
-  padding: 8px 16px;
+  padding: 0.75rem 2rem;
   border: none;
   border-radius: 4px;
   font-size: 14px;
@@ -786,5 +786,100 @@ body {
   .features-grid {
     grid-template-columns: 1fr;
     gap: 24px;
+  }
+} 
+
+/* Clerk Sign-in Modal Customization */
+.cl-modalContent {
+  max-width: 400px !important;
+  width: 90vw !important;
+  max-height: 700px !important;
+  min-height: 600px !important;
+  height: 650px !important;
+}
+
+.cl-card {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 12px !important;
+  height: 100% !important;
+  min-height: 600px !important;
+}
+
+.cl-main {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.cl-form {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 20px 0 !important;
+}
+
+.cl-headerTitle {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+}
+
+.cl-headerSubtitle {
+  font-size: 14px !important;
+  margin-bottom: 16px !important;
+}
+
+.cl-formFieldInput {
+  padding: 10px 12px !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+}
+
+.cl-formButtonPrimary {
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+
+.cl-socialButtonsBlockButton {
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+}
+
+.cl-dividerRow {
+  margin: 16px 0 !important;
+}
+
+.cl-footerActionLink {
+  font-size: 13px !important;
+}
+
+/* Make the modal backdrop slightly more transparent */
+.cl-modalBackdrop {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* High specificity overrides for Clerk modal height */
+div[data-clerk-modal] .cl-modalContent,
+.cl-modal .cl-modalContent {
+  height: 650px !important;
+  min-height: 600px !important;
+}
+
+div[data-clerk-modal] .cl-card,
+.cl-modal .cl-card {
+  height: 100% !important;
+  min-height: 600px !important;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 480px) {
+  .cl-modalContent {
+    max-width: 350px !important;
+    margin: 20px !important;
+    height: 550px !important;
+    min-height: 500px !important;
   }
 } 
