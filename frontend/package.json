@@ -10,20 +10,21 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lexical/code": "^0.12.2",
+    "@lexical/file": "^0.12.2",
+    "@lexical/link": "^0.12.2",
+    "@lexical/list": "^0.12.2",
+    "@lexical/markdown": "^0.12.2",
     "@lexical/react": "^0.12.2",
     "@lexical/rich-text": "^0.12.2",
     "@lexical/selection": "^0.12.2",
-    "@lexical/utils": "^0.12.2",
-    "@lexical/list": "^0.12.2",
-    "@lexical/link": "^0.12.2",
-    "@lexical/markdown": "^0.12.2",
-    "@lexical/code": "^0.12.2",
     "@lexical/table": "^0.12.2",
-    "@lexical/file": "^0.12.2",
+    "@lexical/utils": "^0.12.2",
+    "axios": "^1.6.2",
     "lexical": "^0.12.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "axios": "^1.6.2"
+    "react-router-dom": "^7.6.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -35,4 +36,4 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "vite": "^5.0.8"
   }
-} 
+}
