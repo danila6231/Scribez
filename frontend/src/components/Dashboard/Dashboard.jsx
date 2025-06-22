@@ -1,91 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useUser } from '@clerk/clerk-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import DocumentGroup from './DocumentGroup';
+import { documentAPI, utils } from '../../services/api';
 
 function Dashboard() {
   const { user } = useUser();
+  const { userId } = useAuth();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock documents data - replace with actual API calls later
+  // Fetch user documents when component mounts or userId changes
   useEffect(() => {
-    const now = new Date();
-    const mockDocuments = [
-      {
-        id: '1',
-        title: 'Resume Draft 2024',
-        lastModified: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago (today)
-        preview: 'This is the beginning of my first document...',
-        wordCount: 245
-      },
-      {
-        id: '2',
-        title: 'Weekly Meeting Notes',
-        lastModified: new Date('2025-01-19'),
-        preview: 'Team meeting notes from our planning session...',
-        wordCount: 156
-      },
-      {
-        id: '3',
-        title: 'Interview Prep Guide',
-        lastModified: new Date('2025-01-19'),
-        preview: 'Executive summary for the new project initiative...',
-        wordCount: 892
-      },
-      {
-        id: '4',
-        title: 'Career Workshop Notes',
-        lastModified: new Date('2025-01-18'),
-        preview: 'Workshop notes and materials...',
-        wordCount: 324
-      },
-      {
-        id: '5',
-        title: 'Web Development Notes',
-        lastModified: new Date('2025-01-11'),
-        preview: 'Class notes and assignments...',
-        wordCount: 567
-      },
-      {
-        id: '6',
-        title: 'Data Structures Notes',
-        lastModified: new Date('2025-01-09'),
-        preview: 'Computer science coursework...',
-        wordCount: 789
-      },
-      {
-        id: '7',
-        title: 'Technical Interview Notes',
-        lastModified: new Date('2025-01-08'),
-        preview: 'Technical interview prep materials...',
-        wordCount: 445
-      },
-      {
-        id: '8',
-        title: 'Cybersecurity Basics',
-        lastModified: new Date('2025-01-08'),
-        preview: 'Cybersecurity course materials...',
-        wordCount: 623
-      },
-      {
-        id: '9',
-        title: 'Project Documentation',
-        lastModified: new Date('2025-01-08'),
-        preview: 'Final project documentation...',
-        wordCount: 1234
-      },
-      {
-        id: '10',
-        title: 'Leadership Course Notes',
-        lastModified: new Date('2025-01-08'),
-        preview: 'Resume for leadership course...',
-        wordCount: 298
+    const fetchDocuments = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
       }
-    ];
-    setDocuments(mockDocuments);
-  }, []);
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch documents from backend
+        const apiDocuments = await documentAPI.getUserDocuments(userId);
+        
+        // Format documents for frontend display
+        const formattedDocuments = apiDocuments.map(utils.formatDocument);
+        
+        setDocuments(formattedDocuments);
+      } catch (err) {
+        console.error('Error fetching documents:', err);
+        setError('Failed to load documents. Please try again.');
+        // Fallback to empty array if API fails
+        setDocuments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [userId]);
 
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -150,18 +109,60 @@ function Dashboard() {
 
   const groupedDocuments = groupDocumentsByDate(filteredDocuments);
 
-  const createNewDocument = () => {
-    const newDoc = {
-      id: Date.now().toString(),
-      title: 'Untitled Document',
-      lastModified: new Date(),
-      preview: '',
-      wordCount: 0
-    };
-    setDocuments([newDoc, ...documents]);
-    // Navigate to editor with new document
-    window.location.href = `/editor/${newDoc.id}`;
+  const createNewDocument = async () => {
+    if (!userId) {
+      setError('Please sign in to create documents.');
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      setError(null);
+
+      // Create document in backend using Clerk userId
+      const newDocument = await documentAPI.createDocument(userId, 'Untitled Document');
+      
+      // Format the new document for frontend
+      const formattedDoc = utils.formatDocument(newDocument);
+      
+      // Add to local state
+      setDocuments(prev => [formattedDoc, ...prev]);
+      
+      // Navigate to editor with the new document ID from backend
+      navigate(`/editor/${newDocument.id}`);
+      
+    } catch (err) {
+      console.error('Error creating document:', err);
+      setError('Failed to create document. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
   };
+
+  const deleteDocument = async (documentId) => {
+    try {
+      await documentAPI.deleteDocument(documentId);
+      
+      // Remove from local state
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      setError('Failed to delete document. Please try again.');
+    }
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading your documents...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -199,17 +200,35 @@ function Dashboard() {
       {/* Main Content */}
       <main className="dashboard-main">
         <div className="dashboard-content">
+          {/* Error Message */}
+          {error && (
+            <div className="error-message">
+              <p>{error}</p>
+              <button onClick={() => setError(null)}>Dismiss</button>
+            </div>
+          )}
+
           {/* Create New Document Section */}
           <section className="create-section">
             <h2>Start a new document</h2>
             <div className="template-gallery">
-              <div className="template-card new-doc" onClick={createNewDocument}>
+              <div 
+                className={`template-card new-doc ${isCreating ? 'creating' : ''}`} 
+                onClick={createNewDocument}
+                disabled={isCreating}
+              >
                 <div className="template-preview">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="#4285f4">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                  </svg>
+                  {isCreating ? (
+                    <div className="creating-spinner"></div>
+                  ) : (
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="#4285f4">
+                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                  )}
                 </div>
-                <span className="template-name">Blank</span>
+                <span className="template-name">
+                  {isCreating ? 'Creating...' : 'Blank'}
+                </span>
               </div>
             </div>
           </section>
@@ -226,7 +245,12 @@ function Dashboard() {
                   <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
                 </svg>
                 <h3>No documents found</h3>
-                <p>Create your first document to get started</p>
+                <p>
+                  {searchTerm 
+                    ? 'No documents match your search. Try a different search term.' 
+                    : 'Create your first document to get started'
+                  }
+                </p>
               </div>
             ) : (
               <div className="documents-list">
@@ -235,6 +259,7 @@ function Dashboard() {
                   documents={groupedDocuments.today}
                   formatTime={formatTime}
                   formatDate={formatDate}
+                  onDelete={deleteDocument}
                 />
                 
                 <DocumentGroup
@@ -242,6 +267,7 @@ function Dashboard() {
                   documents={groupedDocuments.previous7Days}
                   formatTime={formatTime}
                   formatDate={formatDate}
+                  onDelete={deleteDocument}
                 />
                 
                 <DocumentGroup
@@ -249,6 +275,7 @@ function Dashboard() {
                   documents={groupedDocuments.previous30Days}
                   formatTime={formatTime}
                   formatDate={formatDate}
+                  onDelete={deleteDocument}
                 />
                 
                 <DocumentGroup
@@ -256,6 +283,7 @@ function Dashboard() {
                   documents={groupedDocuments.older}
                   formatTime={formatTime}
                   formatDate={formatDate}
+                  onDelete={deleteDocument}
                 />
               </div>
             )}

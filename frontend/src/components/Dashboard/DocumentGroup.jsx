@@ -1,7 +1,7 @@
 import React from 'react';
 import DocumentItem from './DocumentItem';
 
-function DocumentGroup({ title, documents, formatTime, formatDate }) {
+function DocumentGroup({ title, documents, formatTime, formatDate, onDelete }) {
   if (documents.length === 0) {
     return null;
   }
@@ -16,6 +16,7 @@ function DocumentGroup({ title, documents, formatTime, formatDate }) {
             document={doc}
             formatTime={formatTime}
             formatDate={formatDate}
+            onDelete={onDelete}
           />
         ))}
       </div>
