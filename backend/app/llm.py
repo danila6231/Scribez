@@ -37,7 +37,7 @@ class QueryAnalysis(BaseModel):
 
 class LLMResponse(BaseModel):
     response: str
-    model_used: str
+    used_model: str
     analysis: Optional[QueryAnalysis] = None
 
 # System prompts
@@ -195,29 +195,29 @@ def get_llm_response(
         if analysis.use_simple_model:
             # Simple query - use Groq
             response = get_groq_response(message, conversation_history)
-            model_used = "groq"
+            model = "groq"
         else:
             # Complex query - use Claude or Gemini
             if preferred_complex_model == "gemini":
                 try:
                     response = get_gemini_response(message, conversation_history)
-                    model_used = "gemini"
+                    model = "gemini"
                 except Exception as e:
                     # Fallback to Claude if Gemini fails
                     response = get_claude_response(message, conversation_history)
-                    model_used = "claude"
+                    model = "claude"
             else:
                 try:
                     response = get_claude_response(message, conversation_history)
-                    model_used = "claude"
+                    model = "claude"
                 except Exception as e:
                     # Fallback to Gemini if Claude fails
                     response = get_gemini_response(message, conversation_history)
-                    model_used = "gemini"
+                    model = "gemini"
         
         return LLMResponse(
             response=response,
-            model_used=model_used,
+            used_model=model,
             analysis=analysis
         )
         
@@ -225,7 +225,7 @@ def get_llm_response(
         # Ultimate fallback - return error message
         return LLMResponse(
             response=f"I apologize, but I encountered an error processing your request: {str(e)}",
-            model_used="error",
+            used_model="error",
             analysis=None
         )
 

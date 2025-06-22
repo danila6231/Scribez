@@ -20,7 +20,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     timestamp: datetime
-    model_used: str
+    model: str
     analysis: Optional[dict] = None
 
 @router.post("/message", response_model=ChatResponse)
@@ -58,7 +58,7 @@ async def send_message(request: ChatRequest):
         return ChatResponse(
             response=llm_response.response,
             timestamp=datetime.now(),
-            model_used=llm_response.model_used,
+            model=llm_response.used_model,
             analysis=analysis_data
         )
     except Exception as e:

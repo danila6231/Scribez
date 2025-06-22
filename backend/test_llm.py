@@ -60,7 +60,7 @@ async def test_llm_routing():
                 print(f"   - Confidence: {response.analysis.confidence}/10")
                 print(f"   - Reason: {response.analysis.reason[:100]}...")
             
-            print(f"🤖 Model used: {response.model_used}")
+            print(f"🤖 Model used: {response.used_model}")
             print(f"💬 Response: {response.response[:150]}...")
             
             # Check if routing decision matches expectation
