@@ -200,4 +200,49 @@ async def clear_chat_history():
     """
     Clear chat history (placeholder implementation)
     """
-    return {"message": "Chat history cleared successfully"} 
+    return {"message": "Chat history cleared successfully"}
+
+class MermaidRequest(BaseModel):
+    query: str
+
+class MermaidResponse(BaseModel):
+    diagram: str
+    
+@router.post("/mermaid", response_model=MermaidResponse)
+async def generate_mermaid_diagram(request: MermaidRequest):
+    """
+    Generate a Mermaid diagram based on the query using Claude Opus
+    """
+    try:
+        # Create a specific prompt for Mermaid diagram generation
+        mermaid_prompt = f"""Generate a Mermaid diagram for: {request.query}
+
+Return ONLY the Mermaid diagram code, without any explanation or markdown code blocks.
+Start directly with the diagram type (e.g., 'graph TD', 'flowchart LR', 'sequenceDiagram', etc.).
+Make sure the diagram is syntactically correct."""
+
+        # Get response from Claude (force complex model)
+        llm_response = get_llm_response(
+            message=mermaid_prompt,
+            conversation_history=[],
+            preferred_complex_model="claude",
+            stream=False
+        )
+        
+        # Clean up the response to ensure it's valid Mermaid syntax
+        diagram_code = llm_response.response.strip()
+        
+        # Remove markdown code blocks if present
+        if diagram_code.startswith("```"):
+            lines = diagram_code.split('\n')
+            # Remove first and last lines if they're code block markers
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines[-1] == "```":
+                lines = lines[:-1]
+            diagram_code = '\n'.join(lines)
+        
+        return MermaidResponse(diagram=diagram_code)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 

@@ -17,7 +17,7 @@ LLM_CONFIG = {
         "responder_model": "compound-beta-mini"
     },
     "claude": {
-        "model": "claude-sonnet-4-20250514"
+        "model": "claude-opus-4-20250514"
     },
     "gemini": {
         "model": "gemini-2.5-flash"
