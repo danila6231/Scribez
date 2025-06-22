@@ -27,12 +27,12 @@ function ChatWindow({ documentId }) {
     
     // Sort changes by position to apply them correctly
     const sortedChanges = [...changes].sort((a, b) => {
-      // Apply deletions first, then insertions
+      // Apply deletions and replacements first, then insertions
       // Within each type, apply from end to beginning to maintain positions
       if (a.type === b.type) {
         return b.start_pos - a.start_pos;
       }
-      return a.type === 'delete' ? -1 : 1;
+      return (a.type === 'delete' || a.type === 'replace') ? -1 : 1;
     });
 
     // Build the new text
@@ -49,6 +49,11 @@ function ChatWindow({ documentId }) {
         const pos = change.start_pos + offset;
         newText = newText.substring(0, pos) + change.new_text + newText.substring(pos);
         offset += change.new_text.length;
+      } else if (change.type === 'replace') {
+        const startPos = change.start_pos + offset;
+        const endPos = change.end_pos + offset;
+        newText = newText.substring(0, startPos) + change.new_text + newText.substring(endPos);
+        offset += change.new_text.length - (endPos - startPos);
       }
     });
 

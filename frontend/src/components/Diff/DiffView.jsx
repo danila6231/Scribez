@@ -58,11 +58,11 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
     // Create a map to track all positions and their changes
     const positionMap = new Map();
     
-    // Track deletions by their position range
+    // Track deletions and replacements by their position range
     processedChanges.forEach(change => {
-      if (change.type === 'delete' && !rejectedChanges.has(change.id)) {
+      if ((change.type === 'delete' || change.type === 'replace') && !rejectedChanges.has(change.id)) {
         for (let pos = change.start_pos; pos < change.end_pos; pos++) {
-          positionMap.set(pos, { type: 'delete', change });
+          positionMap.set(pos, { type: change.type, change });
         }
       }
     });
@@ -113,47 +113,80 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
       // If we've reached the end, break
       if (currentPos >= originalText.length) break;
       
-      // Check if current position is part of a deletion
-      const deletion = positionMap.get(currentPos);
+      // Check if current position is part of a deletion or replacement
+      const changeAtPos = positionMap.get(currentPos);
       
-      if (deletion) {
-        const isAccepted = acceptedChanges.has(deletion.change.id);
-        const isPending = !isAccepted && !rejectedChanges.has(deletion.change.id);
+      if (changeAtPos) {
+        const isAccepted = acceptedChanges.has(changeAtPos.change.id);
+        const isPending = !isAccepted && !rejectedChanges.has(changeAtPos.change.id);
         
-        // Find the full deletion range
-        let deleteEnd = currentPos;
-        while (positionMap.get(deleteEnd) && positionMap.get(deleteEnd).change === deletion.change) {
-          deleteEnd++;
+        // Find the full change range
+        let changeEnd = currentPos;
+        while (positionMap.get(changeEnd) && positionMap.get(changeEnd).change === changeAtPos.change) {
+          changeEnd++;
         }
         
-        // Add the deleted text
-        elements.push(
-          <span key={`delete-${elementKey++}`} className="diff-change-wrapper">
-            <span className={`diff-deleted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
-              {originalText.substring(currentPos, deleteEnd)}
-            </span>
-            {isPending && (
-              <span className="diff-controls">
-                <button 
-                  className="diff-accept-btn" 
-                  onClick={() => handleAcceptChange(deletion.change.id)}
-                  title="Accept deletion"
-                >
-                  ✓
-                </button>
-                <button 
-                  className="diff-reject-btn" 
-                  onClick={() => handleRejectChange(deletion.change.id)}
-                  title="Reject deletion"
-                >
-                  ✗
-                </button>
+        // Handle delete or replace
+        if (changeAtPos.type === 'delete') {
+          // Add the deleted text
+          elements.push(
+            <span key={`delete-${elementKey++}`} className="diff-change-wrapper">
+              <span className={`diff-deleted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
+                {originalText.substring(currentPos, changeEnd)}
               </span>
-            )}
-          </span>
-        );
+              {isPending && (
+                <span className="diff-controls">
+                  <button 
+                    className="diff-accept-btn" 
+                    onClick={() => handleAcceptChange(changeAtPos.change.id)}
+                    title="Accept deletion"
+                  >
+                    ✓
+                  </button>
+                  <button 
+                    className="diff-reject-btn" 
+                    onClick={() => handleRejectChange(changeAtPos.change.id)}
+                    title="Reject deletion"
+                  >
+                    ✗
+                  </button>
+                </span>
+              )}
+            </span>
+          );
+        } else if (changeAtPos.type === 'replace') {
+          // Add both the deleted text and the new text for replacements
+          elements.push(
+            <span key={`replace-${elementKey++}`} className="diff-change-wrapper">
+              <span className={`diff-deleted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
+                {changeAtPos.change.old_text}
+              </span>
+              <span className={`diff-inserted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
+                {changeAtPos.change.new_text}
+              </span>
+              {isPending && (
+                <span className="diff-controls">
+                  <button 
+                    className="diff-accept-btn" 
+                    onClick={() => handleAcceptChange(changeAtPos.change.id)}
+                    title="Accept replacement"
+                  >
+                    ✓
+                  </button>
+                  <button 
+                    className="diff-reject-btn" 
+                    onClick={() => handleRejectChange(changeAtPos.change.id)}
+                    title="Reject replacement"
+                  >
+                    ✗
+                  </button>
+                </span>
+              )}
+            </span>
+          );
+        }
         
-        currentPos = deleteEnd;
+        currentPos = changeEnd;
       } else {
         // Find the next change position
         let nextChangePos = originalText.length;
