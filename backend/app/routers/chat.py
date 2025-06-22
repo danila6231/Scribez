@@ -19,6 +19,7 @@ class ChatRequest(BaseModel):
     message: str
     conversation_history: Optional[List[ChatMessage]] = []
     preferred_complex_model: Optional[str] = "claude"  # "claude" or "gemini"
+    document_content: Optional[str] = ""  # Current document content, defaults to empty string
 
 class ChatResponse(BaseModel):
     response: str
@@ -46,7 +47,8 @@ async def send_message(request: ChatRequest):
         llm_response = get_llm_response(
             message=request.message,
             conversation_history=conversation_history,
-            preferred_complex_model=request.preferred_complex_model
+            preferred_complex_model=request.preferred_complex_model,
+            document_content=request.document_content
         )
         
         # Prepare analysis data if available
@@ -88,7 +90,8 @@ async def stream_message(request: ChatRequest):
                 message=request.message,
                 conversation_history=conversation_history,
                 preferred_complex_model=request.preferred_complex_model,
-                stream=True
+                stream=True,
+                document_content=request.document_content
             )
             
             # Stream each chunk as Server-Sent Events
