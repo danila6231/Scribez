@@ -744,16 +744,15 @@ body {
 }
 
 .diff-overlay-content {
-  width: 90%;
-  max-width: 1000px;
-  max-height: 85vh;
+  width: 80%;
+  max-width: 800px;
+  max-height: 80vh;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   animation: slideIn 0.3s ease-out;
-  overflow: hidden; /* Ensure content doesn't escape bounds */
 }
 
 @keyframes slideIn {
@@ -798,9 +797,7 @@ body {
 .diff-view {
   flex: 1;
   padding: 24px;
-  overflow: auto; /* Allow both horizontal and vertical scrolling */
-  min-height: 0; /* Allow flex item to shrink */
-  max-height: 100%; /* Ensure it doesn't grow beyond container */
+  overflow-y: auto;
 }
 
 /* Resize Handle */
@@ -855,27 +852,6 @@ body {
 
   .resize-handle {
     display: none;
-  }
-  
-  /* Diff overlay responsive design */
-  .diff-overlay-content {
-    width: 95%;
-    max-width: none;
-    max-height: 90vh;
-    margin: 10px;
-  }
-  
-  .diff-overlay-header {
-    padding: 12px 16px;
-  }
-  
-  .diff-overlay-header h3 {
-    font-size: 16px;
-  }
-  
-  .diff-overlay-header button {
-    padding: 6px 12px;
-    font-size: 12px;
   }
 } 
 
