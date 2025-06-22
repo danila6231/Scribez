@@ -1206,6 +1206,18 @@ div[data-clerk-modal] .cl-card,
   margin-bottom: 8px;
 }
 
+.selected-text-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
 .command-k-icon-small {
   display: inline-flex;
   align-items: center;
@@ -1285,6 +1297,33 @@ div[data-clerk-modal] .cl-card,
   background: #f8f9fa;
   border-radius: 6px;
   border-left: 3px solid #667eea;
+}
+
+.response-model-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 6px;
+}
+
+.response-model-badge .model-icon {
+  font-size: 12px;
+}
+
+.response-model-badge .model-name {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.response-model-badge .streaming-indicator {
+  font-size: 10px;
+  opacity: 0.7;
+  font-style: italic;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .response-text {

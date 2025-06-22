@@ -46,7 +46,7 @@ function Editor() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         
-        // Get selected text and cursor position from the editor if available
+        // Get selected text from the editor if available
         if (window.lexicalEditor) {
           window.lexicalEditor.getEditorState().read(() => {
             const selection = $getSelection();
@@ -76,6 +76,8 @@ function Editor() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+
 
   // Load document when documentId changes
   React.useEffect(() => {

@@ -3,23 +3,24 @@ import React, { useState, useRef, useEffect } from 'react';
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 function CommandKWidget({ isOpen, onClose, documentId, selectedText = '', position = { top: 100, left: 100 } }) {
+    if (selectedText === "") {
+        return;
+    }
+
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [model, setModel] = useState('thinking...');
   const inputRef = useRef(null);
   const widgetRef = useRef(null);
 
-  // Focus input when widget opens
+  // Focus input when widget opens but don't pre-fill with selected text
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
-      // Pre-fill with selected text context if available
-      if (selectedText && !inputValue) {
-        setInputValue(`"${selectedText}"`);
-      }
     }
-  }, [isOpen, selectedText]);
+  }, [isOpen]);
 
   // Clear state when widget closes
   useEffect(() => {
@@ -29,6 +30,7 @@ function CommandKWidget({ isOpen, onClose, documentId, selectedText = '', positi
         setResponse('');
         setIsLoading(false);
         setIsStreaming(false);
+        setModel('thinking...');
       }, 200);
     }
   }, [isOpen]);
@@ -68,6 +70,7 @@ function CommandKWidget({ isOpen, onClose, documentId, selectedText = '', positi
     setIsLoading(true);
     setIsStreaming(true);
     setResponse('');
+    setModel('thinking...');
 
     try {
       const response = await fetch(`${API_URL}/api/chat/message/stream`, {
@@ -79,7 +82,7 @@ function CommandKWidget({ isOpen, onClose, documentId, selectedText = '', positi
           message: currentInput,
           conversation_history: [],
           document_id: documentId,
-          context: selectedText ? `Selected text: "${selectedText}"` : undefined,
+          selected_text: selectedText || undefined, // Send selected text as separate field
         }),
       });
 
@@ -105,7 +108,12 @@ function CommandKWidget({ isOpen, onClose, documentId, selectedText = '', positi
             try {
               const data = JSON.parse(line.slice(6));
               
-              if (data.type === 'content') {
+              if (data.type === 'metadata') {
+                // Update with analysis info if needed
+                console.log('Analysis metadata:', data.analysis);
+              } else if (data.type === 'model') {
+                setModel(data.model);
+              } else if (data.type === 'content') {
                 setResponse(prev => prev + data.content);
               } else if (data.type === 'done') {
                 setIsStreaming(false);
@@ -152,6 +160,14 @@ function CommandKWidget({ isOpen, onClose, documentId, selectedText = '', positi
         <div className="command-k-header-small">
           <span className="command-k-icon-small">⌘</span>
           <span>Ask AI</span>
+          {selectedText && (
+            <span className="selected-text-indicator">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              {selectedText.length} chars selected
+            </span>
+          )}
         </div>
         
         <form onSubmit={handleSubmit} className="command-k-form">
@@ -182,6 +198,15 @@ function CommandKWidget({ isOpen, onClose, documentId, selectedText = '', positi
 
         {response && (
           <div className="command-k-response">
+            {model !== 'thinking...' && (
+              <div className="response-model-badge">
+                <span className="model-icon">
+                  {isStreaming ? '⏳' : '🤖'}
+                </span>
+                <span className="model-name">{model}</span>
+                {isStreaming && <span className="streaming-indicator">typing...</span>}
+              </div>
+            )}
             <div className="response-text">
               {response}
               {isStreaming && <span className="streaming-cursor-small">▋</span>}

@@ -41,6 +41,18 @@ users_collection = database["users"]
 documents_collection = database["documents"]
 chat_history_collection = database["chat_history"]
 
+# Helper functions
+async def get_document_content(document_id: str) -> str:
+    """Get document content by document ID"""
+    try:
+        document = await documents_collection.find_one({"_id": document_id})
+        if document:
+            return document.get("content", "")
+        return ""
+    except Exception as e:
+        print(f"Error fetching document content: {e}")
+        return ""
+
 # Create indexes
 async def create_indexes():
     # Index for documents by user_id

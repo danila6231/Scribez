@@ -20,6 +20,8 @@ class ChatRequest(BaseModel):
     conversation_history: Optional[List[ChatMessage]] = []
     preferred_complex_model: Optional[str] = "claude"  # "claude" or "gemini"
     document_content: Optional[str] = ""  # Current document content, defaults to empty string
+    document_id: Optional[str] = None  # Document ID for context
+    selected_text: Optional[str] = None  # Selected text for Command+K interface
 
 class ChatResponse(BaseModel):
     response: str
@@ -43,12 +45,31 @@ async def send_message(request: ChatRequest):
                     "content": msg.content
                 })
         
+        # Prepare document content for context
+        document_content = request.document_content or ""
+        
+        # If document_id is provided but no document_content, try to fetch it
+        if request.document_id and not document_content:
+            try:
+                from app.database import get_document_content
+                document_content = await get_document_content(request.document_id) or ""
+            except Exception as e:
+                print(f"Warning: Could not fetch document content for {request.document_id}: {e}")
+        
+        # Add selected text context if provided (for Command+K)
+        if request.selected_text:
+            context_prefix = f"Selected text from document: \"{request.selected_text}\"\n\n"
+            if document_content:
+                document_content = context_prefix + document_content
+            else:
+                document_content = context_prefix
+        
         # Get LLM response with intelligent routing
         llm_response = get_llm_response(
             message=request.message,
             conversation_history=conversation_history,
             preferred_complex_model=request.preferred_complex_model,
-            document_content=request.document_content
+            document_content=document_content
         )
         
         # Prepare analysis data if available
@@ -85,13 +106,32 @@ async def stream_message(request: ChatRequest):
                         "content": msg.content
                     })
             
+            # Prepare document content for context
+            document_content = request.document_content or ""
+            
+            # If document_id is provided but no document_content, try to fetch it
+            if request.document_id and not document_content:
+                try:
+                    from app.database import get_document_content
+                    document_content = await get_document_content(request.document_id) or ""
+                except Exception as e:
+                    print(f"Warning: Could not fetch document content for {request.document_id}: {e}")
+            
+            # Add selected text context if provided (for Command+K)
+            if request.selected_text:
+                context_prefix = f"Selected text from document: \"{request.selected_text}\"\n\n"
+                if document_content:
+                    document_content = context_prefix + document_content
+                else:
+                    document_content = context_prefix
+            
             # Get streaming LLM response
             response_generator = get_llm_response(
                 message=request.message,
                 conversation_history=conversation_history,
                 preferred_complex_model=request.preferred_complex_model,
                 stream=True,
-                document_content=request.document_content
+                document_content=document_content
             )
             
             # Stream each chunk as Server-Sent Events
