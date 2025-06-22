@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DiffView from './DiffView';
 import './diffTester.css';
+import { API_URL } from '../../config/api';
 
 const DiffTester = () => {
   const [originalText, setOriginalText] = useState('The Smart City Initiative aims to transform urban living through technology.');
@@ -20,7 +21,7 @@ const DiffTester = () => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/diff/compute', {
+      const response = await fetch(`${API_URL}/diff/compute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

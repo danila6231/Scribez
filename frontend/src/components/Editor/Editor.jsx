@@ -18,6 +18,7 @@ import { editorConfig } from './editorConfig';
 import Toolbar from './Toolbar';
 import { documentAPI } from '../../services/api';
 import { debugDocumentAPI, testContentLoading, verifyDocument } from '../../utils/debugAPI';
+import { API_URL } from '../../config/api';
 
 // Main Editor Component
 function Editor() {
@@ -271,7 +272,7 @@ function Editor() {
     // Use sendBeacon for reliable save on page unload
     const data = JSON.stringify({ content: markdownContent });
     const blob = new Blob([data], { type: 'application/json' });
-    navigator.sendBeacon(`https://aiberkeley-hack.onrender.com/api/documents/${documentId}`, blob);
+    navigator.sendBeacon(`${API_URL}/documents/${documentId}`, blob);
   };
 
   const onChange = (editorState, editor) => {
