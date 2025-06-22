@@ -57,8 +57,8 @@ return (
                 </SignInButton>
             </SignedOut>
             <SignedIn>
-                <Link to="/editor" className="cta-button primary">
-                Go to Editor
+                <Link to="/dashboard" className="cta-button primary">
+                Go to Dashboard
                 </Link>
             </SignedIn>
             </div>

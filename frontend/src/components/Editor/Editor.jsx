@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
 import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
@@ -22,6 +22,7 @@ import { debugDocumentAPI, testContentLoading, verifyDocument } from '../../util
 function Editor() {
   const { documentId } = useParams();
   const { userId } = useAuth();
+  const navigate = useNavigate();
   const [documentTitle, setDocumentTitle] = React.useState('Untitled Document');
   const [isLoading, setIsLoading] = React.useState(false);
   const [lastSaved, setLastSaved] = React.useState(null);
@@ -393,6 +394,15 @@ function Editor() {
     <div className="editor-container">
       <div className="editor-header">
         <div className="editor-title-section">
+          <button 
+            onClick={() => navigate('/dashboard')} 
+            className="home-button"
+            title="Back to Dashboard"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+          </button>
           <input
             type="text"
             value={documentTitle}

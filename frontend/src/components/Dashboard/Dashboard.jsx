@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useUser, useAuth } from '@clerk/clerk-react';
+import { useUser, useAuth, SignedIn, SignOutButton } from '@clerk/clerk-react';
 import DocumentGroup from './DocumentGroup';
 import { documentAPI, utils } from '../../services/api';
 
@@ -174,7 +174,7 @@ function Dashboard() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="#4285f4">
                 <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
               </svg>
-              <span className="logo-text">WriteFlow</span>
+              <span className="logo-text">Skribez</span>
             </div>
           </div>
           <div className="nav-center">
@@ -192,7 +192,13 @@ function Dashboard() {
             </div>
           </div>
           <div className="nav-right">
-            <span className="user-name">Hello, {user?.firstName || 'User'}</span>
+              <SignedIn>
+              <SignOutButton mode="modal" forceRedirectUrl="/">
+                <button className="cta-button primary">
+                  Logout
+                </button>
+              </SignOutButton>
+              </SignedIn>
           </div>
         </div>
       </header>
