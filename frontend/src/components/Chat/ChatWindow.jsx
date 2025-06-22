@@ -298,7 +298,7 @@ function ChatWindow({ documentId }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `Create a short concise plan (3-5 sentences) for the following edit request: ${trimmedInput}. DO EXACTLY what is asked by the user, nothing else. DO NOT INCLUDE THE REWRITTEN DOCUMENT.`,
+          message: `Create a short concise plan (2-4 bullet points) for the following edit request: ${trimmedInput}. DO EXACTLY what is asked by the user, nothing else. DO NOT INCLUDE THE REWRITTEN DOCUMENT.`,
           conversation_history: messages,
           document_id: documentId,
           document_content: documentContent
@@ -358,7 +358,7 @@ function ChatWindow({ documentId }) {
 
       // Step 2: Generate new document version
       const editResponse = await axios.post(`${API_URL}/api/chat/message`, {
-        message: `Based on this plan: "${planContent}", apply the following edit to the document: ${trimmedInput}. DO EXACTLY WHAT IS ASKED, DO NOT ADD MODIFY ANYTHING ELSE. Return ONLY the edited document content, nothing else.`,
+        message: `Based on THE  plan: "${planContent}", apply the following edit to the document: ${trimmedInput}. DO EXACTLY WHAT IS ASKED, DO NOT ADD MODIFY ANYTHING ELSE. Return ONLY the edited document content, nothing else.`,
         conversation_history: [],
         document_content: documentContent,
         edit_mode: true
@@ -376,74 +376,74 @@ function ChatWindow({ documentId }) {
       setDiffChanges(diffResponse.data.changes);
       setShowDiffView(true);
 
-      // Step 5: Stream summary of changes (while user reviews diff)
-      const summaryMessageId = Date.now() + 1;
-      const summaryMessage = {
-        id: summaryMessageId,
-        content: '',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-        isStreaming: true,
-        model: 'summarizing...',
-        isSummary: true
-      };
+      // // Step 5: Stream summary of changes (while user reviews diff)
+      // const summaryMessageId = Date.now() + 1;
+      // const summaryMessage = {
+      //   id: summaryMessageId,
+      //   content: '',
+      //   role: 'assistant',
+      //   timestamp: new Date().toISOString(),
+      //   isStreaming: true,
+      //   model: 'summarizing...',
+      //   isSummary: true
+      // };
       
-      setMessages(prev => [...prev, summaryMessage]);
+      // setMessages(prev => [...prev, summaryMessage]);
 
-      const summaryResponse = await fetch(`${API_URL}/api/chat/message/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: `Summarize the changes you made to the document based on the user's request: "${trimmedInput}". Be concise and specific about what was changed.`,
-          conversation_history: [],
-          document_content: newContent
-        }),
-      });
+      // const summaryResponse = await fetch(`${API_URL}/api/chat/message/stream`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     message: `Summarize the changes you made to the document based on the user's request: "${trimmedInput}". Be concise and specific about what was changed.`,
+      //     conversation_history: [],
+      //     document_content: newContent
+      //   }),
+      // });
 
-      const summaryReader = summaryResponse.body.getReader();
-      const summaryDecoder = new TextDecoder();
-      let summaryBuffer = '';
+      // const summaryReader = summaryResponse.body.getReader();
+      // const summaryDecoder = new TextDecoder();
+      // let summaryBuffer = '';
 
-      while (true) {
-        const { done, value } = await summaryReader.read();
-        if (done) break;
+      // while (true) {
+      //   const { done, value } = await summaryReader.read();
+      //   if (done) break;
 
-        summaryBuffer += summaryDecoder.decode(value, { stream: true });
-        const lines = summaryBuffer.split('\n');
-        summaryBuffer = lines.pop() || '';
+      //   summaryBuffer += summaryDecoder.decode(value, { stream: true });
+      //   const lines = summaryBuffer.split('\n');
+      //   summaryBuffer = lines.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
+      //   for (const line of lines) {
+      //     if (line.startsWith('data: ')) {
+      //       try {
+      //         const data = JSON.parse(line.slice(6));
               
-              if (data.type === 'content') {
-                setMessages(prev => prev.map(msg => 
-                  msg.id === summaryMessageId 
-                    ? { ...msg, content: msg.content + data.content }
-                    : msg
-                ));
-              } else if (data.type === 'model') {
-                setMessages(prev => prev.map(msg => 
-                  msg.id === summaryMessageId 
-                    ? { ...msg, model: data.model }
-                    : msg
-                ));
-              } else if (data.type === 'done') {
-                setMessages(prev => prev.map(msg => 
-                  msg.id === summaryMessageId 
-                    ? { ...msg, isStreaming: false }
-                    : msg
-                ));
-              }
-            } catch (parseError) {
-              console.error('Error parsing SSE data:', parseError);
-            }
-          }
-        }
-      }
+      //         if (data.type === 'content') {
+      //           setMessages(prev => prev.map(msg => 
+      //             msg.id === summaryMessageId 
+      //               ? { ...msg, content: msg.content + data.content }
+      //               : msg
+      //           ));
+      //         } else if (data.type === 'model') {
+      //           setMessages(prev => prev.map(msg => 
+      //             msg.id === summaryMessageId 
+      //               ? { ...msg, model: data.model }
+      //               : msg
+      //           ));
+      //         } else if (data.type === 'done') {
+      //           setMessages(prev => prev.map(msg => 
+      //             msg.id === summaryMessageId 
+      //               ? { ...msg, isStreaming: false }
+      //               : msg
+      //           ));
+      //         }
+      //       } catch (parseError) {
+      //         console.error('Error parsing SSE data:', parseError);
+      //       }
+      //     }
+      //   }
+      // }
 
     } catch (error) {
       console.error('Error in edit mode:', error);
