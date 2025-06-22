@@ -1,11 +1,10 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
+import { $getRoot, $createParagraphNode, $createTextNode, $getSelection } from 'lexical';
 import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
 import { TRANSFORMERS } from '@lexical/markdown';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
@@ -16,9 +15,9 @@ import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { editorConfig } from './editorConfig';
 import Toolbar from './Toolbar';
+import CommandKWidget from './CommandKModal';
 import { documentAPI } from '../../services/api';
 import { debugDocumentAPI, testContentLoading, verifyDocument } from '../../utils/debugAPI';
-import { API_URL } from '../../config/api';
 
 // Main Editor Component
 function Editor() {
@@ -32,9 +31,51 @@ function Editor() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
   const [lastContent, setLastContent] = React.useState('');
+  const [lastTitle, setLastTitle] = React.useState(''); // Track original title
   const [pendingContent, setPendingContent] = React.useState(null);
   const [editorReady, setEditorReady] = React.useState(false);
   const [debugMode, setDebugMode] = React.useState(process.env.NODE_ENV === 'development');
+  const [isCommandKOpen, setIsCommandKOpen] = React.useState(false);
+  const [selectedText, setSelectedText] = React.useState('');
+  const [commandKPosition, setCommandKPosition] = React.useState({ top: 100, left: 100 });
+
+  // Handle Cmd+K keyboard shortcut
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        
+        // Get selected text and cursor position from the editor if available
+        if (window.lexicalEditor) {
+          window.lexicalEditor.getEditorState().read(() => {
+            const selection = $getSelection();
+            if (selection && !selection.isCollapsed()) {
+              const text = selection.getTextContent();
+              setSelectedText(text);
+            } else {
+              setSelectedText('');
+            }
+          });
+        }
+        
+        // Position the widget near the center of the editor
+        const editorElement = document.querySelector('.ContentEditable__root');
+        if (editorElement) {
+          const rect = editorElement.getBoundingClientRect();
+          setCommandKPosition({
+            top: rect.top + 100,
+            left: rect.left + rect.width / 2 - 160, // Center horizontally (-160 = half widget width)
+          });
+        }
+        
+        setIsCommandKOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Load document when documentId changes
   React.useEffect(() => {
@@ -109,6 +150,7 @@ function Editor() {
       console.log('Content length:', content?.length || 0);
       console.log('Content preview:', content?.substring(0, 100) || 'No content');
       console.log('Raw content:', JSON.stringify(content));
+      console.log('Number of newlines in content:', (content?.match(/\n/g) || []).length);
       
       // Debug: Test content loading
       if (debugMode) {
@@ -117,6 +159,7 @@ function Editor() {
       
       setDocumentTitle(title);
       setLastContent(content || '');
+      setLastTitle(title); // Track the original title
       setHasUnsavedChanges(false);
       
       // If editor is ready, load content immediately, otherwise store as pending
@@ -145,11 +188,15 @@ function Editor() {
       console.log('🔄 Loading content into Lexical editor...');
       console.log('Content to load:', content);
       
+      // Normalize content before loading to prevent newline accumulation
+      const normalizedContent = normalizeContent(content);
+      console.log('Normalized content:', normalizedContent);
+      
       window.lexicalEditor.update(() => {
         const root = $getRoot();
         root.clear();
         
-        if (!content || content.trim() === '') {
+        if (!normalizedContent || normalizedContent.trim() === '') {
           console.log('📝 Loading empty content');
           // Create an empty paragraph for empty content
           const paragraph = $createParagraphNode();
@@ -158,37 +205,28 @@ function Editor() {
         }
         
         // Try to detect if content is markdown
-        const isMarkdown = content.includes('# ') || 
-                          content.includes('## ') || 
-                          content.includes('**') || 
-                          content.includes('- ') ||
-                          content.includes('1. ') ||
-                          content.includes('> ');
+        const isMarkdown = normalizedContent.includes('# ') || 
+                          normalizedContent.includes('## ') || 
+                          normalizedContent.includes('**') || 
+                          normalizedContent.includes('- ') ||
+                          normalizedContent.includes('1. ') ||
+                          normalizedContent.includes('> ');
         
         if (isMarkdown) {
           console.log('📝 Loading content as Markdown');
           try {
-            $convertFromMarkdownString(content, TRANSFORMERS);
+            $convertFromMarkdownString(normalizedContent, TRANSFORMERS);
           } catch (markdownError) {
             console.warn('⚠️ Markdown conversion failed, loading as plain text:', markdownError);
-            loadAsPlainText(content, root);
+            loadAsPlainText(normalizedContent, root);
           }
         } else {
           console.log('📝 Loading content as plain text');
-          loadAsPlainText(content, root);
+          loadAsPlainText(normalizedContent, root);
         }
       });
       
       console.log('✅ Content loaded successfully into editor');
-      
-      // Force a re-render to ensure content is visible
-      setTimeout(() => {
-        if (window.lexicalEditor) {
-          window.lexicalEditor.focus();
-          // Immediately blur to not keep cursor active
-          setTimeout(() => window.lexicalEditor.blur(), 50);
-        }
-      }, 100);
       
     } catch (err) {
       console.error('❌ Error loading content into editor:', err);
@@ -196,17 +234,83 @@ function Editor() {
     }
   };
 
+  const normalizeContent = (content) => {
+    if (!content) return '';
+    
+    // Split content into lines
+    const lines = content.split('\n');
+    const normalizedLines = [];
+    let consecutiveEmptyLines = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine === '') {
+        consecutiveEmptyLines++;
+        // Only allow maximum 2 consecutive empty lines (for paragraph spacing)
+        if (consecutiveEmptyLines <= 2) {
+          normalizedLines.push('');
+        }
+      } else {
+        consecutiveEmptyLines = 0;
+        normalizedLines.push(line);
+      }
+    }
+    
+    // Remove excessive trailing newlines (keep max 1)
+    while (normalizedLines.length > 1 && normalizedLines[normalizedLines.length - 1].trim() === '') {
+      normalizedLines.pop();
+    }
+    
+    return normalizedLines.join('\n');
+  };
+
   const loadAsPlainText = (content, root) => {
     // Split content into lines and create paragraphs
     const lines = content.split('\n');
-    lines.forEach((line, index) => {
-      const paragraph = $createParagraphNode();
-      if (line.trim()) {
-        const textNode = $createTextNode(line);
-        paragraph.append(textNode);
+    
+    // Filter out excessive empty lines and normalize content
+    const processedLines = [];
+    let consecutiveEmptyLines = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine === '') {
+        consecutiveEmptyLines++;
+        // Only allow one consecutive empty line to preserve paragraph breaks
+        if (consecutiveEmptyLines === 1) {
+          processedLines.push('');
+        }
+      } else {
+        consecutiveEmptyLines = 0;
+        processedLines.push(line);
       }
+    }
+    
+    // Remove trailing empty lines
+    while (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() === '') {
+      processedLines.pop();
+    }
+    
+    // Create paragraphs for non-empty lines and single empty lines for spacing
+    if (processedLines.length === 0) {
+      // Create a single empty paragraph for completely empty content
+      const paragraph = $createParagraphNode();
       root.append(paragraph);
-    });
+    } else {
+      processedLines.forEach((line, index) => {
+        const paragraph = $createParagraphNode();
+        if (line.trim()) {
+          const textNode = $createTextNode(line);
+          paragraph.append(textNode);
+        }
+        // Always append the paragraph, even if empty, to maintain structure
+        root.append(paragraph);
+      });
+    }
   };
 
   const saveDocument = async (editorState, title = documentTitle) => {
@@ -227,6 +331,9 @@ function Editor() {
         });
       }
       
+      // Normalize content to prevent newline accumulation
+      markdownContent = normalizeContent(markdownContent);
+      
       // Only save if content has actually changed
       if (markdownContent === lastContent) {
         console.log('No changes detected, skipping save');
@@ -237,13 +344,19 @@ function Editor() {
       console.log('💾 Saving document content via PUT endpoint...');
       console.log('Document ID:', documentId);
       console.log('Content length:', markdownContent.length);
+      console.log('Number of newlines before save:', (markdownContent.match(/\n/g) || []).length);
+      console.log('Previous content length:', lastContent.length);
+      console.log('Previous newlines count:', (lastContent.match(/\n/g) || []).length);
       
       // Save document content to backend using PUT endpoint
       const response = await documentAPI.updateDocumentContent(documentId, markdownContent);
       
       setLastSaved(new Date());
       setLastContent(markdownContent);
-      setHasUnsavedChanges(false);
+      
+      // Check if title still has unsaved changes
+      const titleChanged = documentTitle !== lastTitle;
+      setHasUnsavedChanges(titleChanged);
       console.log('✅ Document saved successfully via PUT /api/documents/', documentId);
       console.log('Response:', response);
       
@@ -266,13 +379,16 @@ function Editor() {
     editorState.read(() => {
       markdownContent = $convertToMarkdownString(TRANSFORMERS);
     });
+    
+    // Normalize content to prevent newline accumulation
+    markdownContent = normalizeContent(markdownContent);
 
     if (markdownContent === lastContent) return;
 
     // Use sendBeacon for reliable save on page unload
     const data = JSON.stringify({ content: markdownContent });
     const blob = new Blob([data], { type: 'application/json' });
-    navigator.sendBeacon(`${API_URL}/documents/${documentId}`, blob);
+    navigator.sendBeacon(`https://aiberkeley-hack.onrender.com/api/documents/${documentId}`, blob);
   };
 
   const onChange = (editorState, editor) => {
@@ -291,7 +407,9 @@ function Editor() {
       currentContent = $convertToMarkdownString(TRANSFORMERS);
     });
     
-    const hasChanges = currentContent !== lastContent;
+    const contentChanged = currentContent !== lastContent;
+    const titleChanged = documentTitle !== lastTitle;
+    const hasChanges = contentChanged || titleChanged;
     setHasUnsavedChanges(hasChanges);
     
     // Handle editor changes here if needed
@@ -308,11 +426,11 @@ function Editor() {
       });
     }
     
-    // Auto-save document after changes (debounced) - only if content actually changed
-    if (documentId && hasChanges) {
+    // Auto-save document after changes (debounced) - only save content changes here
+    if (documentId && contentChanged) {
       clearTimeout(window.autoSaveTimeout);
       window.autoSaveTimeout = setTimeout(() => {
-        console.log('⏰ Auto-save triggered after 3 seconds of inactivity');
+        console.log('⏰ Auto-save content triggered after 3 seconds of inactivity');
         saveDocument(editorState);
       }, 3000); // Save after 3 seconds of inactivity
     }
@@ -344,16 +462,49 @@ function Editor() {
   const handleTitleChange = (e) => {
     const newTitle = e.target.value;
     setDocumentTitle(newTitle);
-    setHasUnsavedChanges(true);
     
-    // Auto-save title changes (debounced)
-    clearTimeout(window.titleSaveTimeout);
-    window.titleSaveTimeout = setTimeout(() => {
-      // For now, we only save content. Title updates could be added to the API
-      console.log('Title updated:', newTitle);
-      // Note: Backend doesn't currently have endpoint to update title separately
-      // This could be enhanced by adding a title update endpoint
-    }, 1000);
+    // Check if title actually changed from the original
+    const titleChanged = newTitle !== lastTitle;
+    
+    // Update unsaved changes status
+    const contentChanged = window.lexicalEditor ? (() => {
+      let currentContent = '';
+      window.lexicalEditor.getEditorState().read(() => {
+        currentContent = $convertToMarkdownString(TRANSFORMERS);
+      });
+      return currentContent !== lastContent;
+    })() : false;
+    
+    setHasUnsavedChanges(titleChanged || contentChanged);
+    
+    // Auto-save title changes immediately after typing stops
+    if (titleChanged && documentId) {
+      clearTimeout(window.titleSaveTimeout);
+      window.titleSaveTimeout = setTimeout(async () => {
+        console.log('💾 Auto-saving title...');
+        try {
+          await documentAPI.updateDocumentTitle(documentId, newTitle);
+          setLastTitle(newTitle); // Update the tracked title
+          setLastSaved(new Date());
+          console.log('✅ Title saved successfully');
+          
+          // Re-check unsaved changes after title save
+          const stillContentChanged = window.lexicalEditor ? (() => {
+            let currentContent = '';
+            window.lexicalEditor.getEditorState().read(() => {
+              currentContent = $convertToMarkdownString(TRANSFORMERS);
+            });
+            return currentContent !== lastContent;
+          })() : false;
+          
+          setHasUnsavedChanges(stillContentChanged);
+          
+        } catch (error) {
+          console.error('❌ Failed to save title:', error);
+          setError(`Failed to save title: ${error.message}`);
+        }
+      }, 1000); // Save after 1 second of no typing
+    }
   };
 
   const manualSave = async () => {
@@ -401,22 +552,6 @@ function Editor() {
     }
   };
 
-  // Custom plugin to initialize editor immediately
-  function InitializeEditorPlugin() {
-    const [editor] = useLexicalComposerContext();
-    
-    React.useEffect(() => {
-      // Store editor reference and mark as ready immediately
-      window.lexicalEditor = editor;
-      if (!editorReady) {
-        console.log('🚀 Editor initialized and ready');
-        setEditorReady(true);
-      }
-    }, [editor]);
-    
-    return null;
-  }
-
   return (
     <div className="editor-container">
       <div className="editor-header">
@@ -457,20 +592,9 @@ function Editor() {
                 Error loading/saving
               </span>
             )}
-            {debugMode && (
-              <span className="debug-indicator">DEBUG MODE</span>
-            )}
+
           </div>
           <div className="editor-actions">
-            {debugMode && (
-              <button 
-                onClick={runDebugTest} 
-                className="debug-btn"
-                disabled={isLoading}
-              >
-                Debug
-              </button>
-            )}
             {error && (
               <>
                 <button 
@@ -536,10 +660,16 @@ function Editor() {
           <ListPlugin />
           <LinkPlugin />
           <TabIndentationPlugin />
-          <InitializeEditorPlugin />
         </div>
-      </LexicalComposer>
-    </div>
+              </LexicalComposer>
+        <CommandKWidget
+          isOpen={isCommandKOpen}
+          onClose={() => setIsCommandKOpen(false)}
+          documentId={documentId}
+          selectedText={selectedText}
+          position={commandKPosition}
+        />
+      </div>
   );
 }
 

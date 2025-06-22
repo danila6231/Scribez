@@ -1,7 +1,7 @@
 import React from 'react';
 import { $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, UNDO_COMMAND, REDO_COMMAND, FORMAT_ELEMENT_COMMAND, $createParagraphNode, $createTextNode } from 'lexical';
 import { $setBlocksType } from '@lexical/selection';
-import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
+import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND, $isListNode, $isListItemNode } from '@lexical/list';
 import { $createHeadingNode, $createQuoteNode } from '@lexical/rich-text';
 import { $createCodeNode } from '@lexical/code';
 import { $createLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
@@ -28,6 +28,7 @@ function Toolbar() {
   const [highlight, setHighlight] = React.useState(false);
   const [alignment, setAlignment] = React.useState('left');
   const [blockType, setBlockType] = React.useState('paragraph');
+  const [listType, setListType] = React.useState(null); // 'ul', 'ol', or null
   
   const updateToolbar = React.useCallback(() => {
     const selection = $getSelection();
@@ -40,22 +41,58 @@ function Toolbar() {
       
       // Get the current element to check alignment and block type
       const anchorNode = selection.anchor.getNode();
-      const element = anchorNode.getKey() === 'root' ? anchorNode : anchorNode.getTopLevelElementOrThrow();
+      let element = anchorNode.getKey() === 'root' ? anchorNode : anchorNode.getTopLevelElementOrThrow();
       const elementFormat = element.getFormatType();
       setAlignment(elementFormat || 'left');
       
-      // Determine block type using Lexical's built-in type checking
-      const elementType = element.getType();
-      if (elementType === 'heading') {
-        const headingTag = element.getTag();
-        setBlockType(headingTag);
-      } else if (elementType === 'quote') {
-        setBlockType('quote');
-      } else if (elementType === 'code') {
-        setBlockType('code');
-      } else {
-        setBlockType('paragraph');
+      // Initialize with defaults
+      let newBlockType = 'paragraph';
+      let newListType = null;
+      
+      // Check if we're inside a list by looking at ancestors
+      let node = anchorNode;
+      let listItemNode = null;
+      let listNode = null;
+      
+      // Traverse up to find list item and list nodes
+      while (node && !listNode) {
+        if ($isListItemNode(node)) {
+          listItemNode = node;
+        } else if ($isListNode(node)) {
+          listNode = node;
+        }
+        node = node.getParent();
       }
+      
+      // If we found a list item, look for its parent list
+      if (listItemNode && !listNode) {
+        let parent = listItemNode.getParent();
+        while (parent && !listNode) {
+          if ($isListNode(parent)) {
+            listNode = parent;
+          }
+          parent = parent.getParent();
+        }
+      }
+      
+      // Determine block type
+      const elementType = element.getType();
+      
+      if (listNode) {
+        newBlockType = 'list';
+        newListType = listNode.getListType();
+      } else if (elementType === 'heading') {
+        const headingTag = element.getTag();
+        newBlockType = headingTag;
+      } else if (elementType === 'quote') {
+        newBlockType = 'quote';
+      } else if (elementType === 'code') {
+        newBlockType = 'code';
+      }
+      
+      // Update states
+      setBlockType(newBlockType);
+      setListType(newListType);
     }
   }, []);
 
@@ -278,16 +315,18 @@ function Toolbar() {
       </button>
       <div className="toolbar-divider" />
       <button
-        className="toolbar-button"
+        className={`toolbar-button ${blockType === 'list' && listType === 'bullet' ? 'active' : ''}`}
         onClick={() => insertList('ul')}
         aria-label="Bullet List"
+        title="Bullet List (- item)"
       >
         • List
       </button>
       <button
-        className="toolbar-button"
+        className={`toolbar-button ${blockType === 'list' && listType === 'number' ? 'active' : ''}`}
         onClick={() => insertList('ol')}
         aria-label="Numbered List"
+        title="Numbered List (1. item)"
       >
         1. List
       </button>
@@ -327,6 +366,25 @@ function Toolbar() {
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <path d="M12 8a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 .5.5z"/>
         </svg>
+      </button>
+
+      <div className="toolbar-divider" />
+
+      <button 
+        className="toolbar-button command-k-button"
+        title="AI Assistant (⌘K)"
+        onClick={() => {
+          // Dispatch custom event to open Command+K modal
+          const event = new KeyboardEvent('keydown', {
+            key: 'k',
+            metaKey: true,
+            ctrlKey: true,
+            bubbles: true
+          });
+          document.dispatchEvent(event);
+        }}
+      >
+        <span style={{ fontSize: '14px', fontWeight: 'bold' }}>⌘K</span>
       </button>
     </div>
   );
