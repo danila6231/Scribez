@@ -1,7 +1,8 @@
 /* Lexical Editor Styles */
 
 .editor-paragraph {
-  margin: 0 0 15px 0;
+  margin: 0 0 15px 0 !important;
+  line-height: inherit !important;
 }
 
 /* Text Alignment Classes */

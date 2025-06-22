@@ -17,4 +17,5 @@ certifi==2024.8.30
 pyOpenSSL==24.0.0
 
 httpx==0.25.2
-sse-starlette==1.6.5 
+sse-starlette==1.6.5
+cloudinary==1.44.1 

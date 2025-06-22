@@ -162,7 +162,7 @@ body {
   min-height: 1056px; /* Ensure at least one full page shows */
   outline: none;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.6 !important;
   
   padding: 80px;
   max-width: 850px;
@@ -198,6 +198,16 @@ body {
     transparent calc(var(--page-height) + var(--page-spacing))
   );
   mask-size: 100% calc(var(--page-height) + var(--page-spacing));
+}
+
+/* Ensure consistent spacing for all editor elements */
+.editor-content .ContentEditable__root * {
+  line-height: inherit !important;
+}
+
+.editor-content .ContentEditable__root p {
+  margin: 0 0 15px 0 !important;
+  line-height: 1.6 !important;
 }
 
 /* Chat Styles */
@@ -240,7 +250,7 @@ body {
 }
 
 .chat-message.user {
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .chat-message.assistant {
