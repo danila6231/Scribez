@@ -104,12 +104,16 @@ def analyze_query_complexity(message: str, conversation_history: Optional[List[D
             confidence=1
         )
 
-def get_groq_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False) -> Union[str, Generator[str, None, None]]:
+def get_groq_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None) -> Union[str, Generator[str, None, None]]:
     """Get response from Groq for simple queries"""
     try:
         messages = [
             {"role": "system", "content": GROQ_RESPONDER_PROMPT}
         ]
+        
+        # Add document content if provided
+        if document_content:
+            messages.append({"role": "system", "content": f"Current document content:\n{document_content}\n"})
         
         # Add conversation history
         if conversation_history:
@@ -143,11 +147,18 @@ def get_groq_response(message: str, conversation_history: Optional[List[Dict[str
         else:
             raise Exception(f"Groq response error: {str(e)}")
 
-def get_claude_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False) -> Union[str, Generator[str, None, None]]:
+def get_claude_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None) -> Union[str, Generator[str, None, None]]:
     """Get response from Claude for complex queries"""
     try:
         # Prepare messages in Claude format
         messages = []
+        
+        # Add document content if provided
+        if document_content:
+            messages.append({
+                "role": "user",
+                "content": f"Here is the current document content:\n{document_content}\n\nBased on this context, please answer the following question:"
+            })
         
         if conversation_history:
             for msg in conversation_history[-10:]:  # More context for complex queries
@@ -186,7 +197,7 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
         else:
             raise Exception(f"Claude response error: {str(e)}")
 
-def get_gemini_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False) -> Union[str, Generator[str, None, None]]:
+def get_gemini_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None) -> Union[str, Generator[str, None, None]]:
     """Get response from Gemini for complex queries"""
     try:
         # Initialize Gemini model
@@ -194,8 +205,13 @@ def get_gemini_response(message: str, conversation_history: Optional[List[Dict[s
         
         # Prepare context
         full_prompt = ""
+        
+        # Add document content if provided
+        if document_content:
+            full_prompt = f"Current document content:\n{document_content}\n\n"
+        
         if conversation_history:
-            full_prompt = "Previous conversation:\n"
+            full_prompt += "Previous conversation:\n"
             for msg in conversation_history[-10:]:
                 full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
             full_prompt += "\n"
@@ -225,7 +241,8 @@ def get_llm_response(
     message: str, 
     conversation_history: Optional[List[Dict[str, str]]] = None,
     preferred_complex_model: str = "claude",  # "claude" or "gemini"
-    stream: bool = False
+    stream: bool = False,
+    document_content: Optional[str] = None
 ) -> Union[LLMResponse, Generator[Dict[str, Any], None, None]]:
     """
     Main function to get LLM response with intelligent routing
@@ -249,25 +266,25 @@ def get_llm_response(
                 # Then stream the response
                 if analysis.use_simple_model:
                     # Simple query - use Groq
-                    response_generator = get_groq_response(message, conversation_history, stream=True)
+                    response_generator = get_groq_response(message, conversation_history, stream=True, document_content=document_content)
                     model = "groq"
                 else:
                     # Complex query - use Claude or Gemini
                     if preferred_complex_model == "gemini":
                         try:
-                            response_generator = get_gemini_response(message, conversation_history, stream=True)
+                            response_generator = get_gemini_response(message, conversation_history, stream=True, document_content=document_content)
                             model = "gemini"
                         except Exception:
                             # Fallback to Claude if Gemini fails
-                            response_generator = get_claude_response(message, conversation_history, stream=True)
+                            response_generator = get_claude_response(message, conversation_history, stream=True, document_content=document_content)
                             model = "claude"
                     else:
                         try:
-                            response_generator = get_claude_response(message, conversation_history, stream=True)
+                            response_generator = get_claude_response(message, conversation_history, stream=True, document_content=document_content)
                             model = "claude"
                         except Exception:
                             # Fallback to Gemini if Claude fails
-                            response_generator = get_gemini_response(message, conversation_history, stream=True)
+                            response_generator = get_gemini_response(message, conversation_history, stream=True, document_content=document_content)
                             model = "gemini"
                 
                 yield {"type": "model", "model": model}
@@ -283,25 +300,25 @@ def get_llm_response(
             # Step 2: Route to appropriate model
             if analysis.use_simple_model:
                 # Simple query - use Groq
-                response = get_groq_response(message, conversation_history)
+                response = get_groq_response(message, conversation_history, document_content=document_content)
                 model = "groq"
             else:
                 # Complex query - use Claude or Gemini
                 if preferred_complex_model == "gemini":
                     try:
-                        response = get_gemini_response(message, conversation_history)
+                        response = get_gemini_response(message, conversation_history, document_content=document_content)
                         model = "gemini"
                     except Exception as e:
                         # Fallback to Claude if Gemini fails
-                        response = get_claude_response(message, conversation_history)
+                        response = get_claude_response(message, conversation_history, document_content=document_content)
                         model = "claude"
                 else:
                     try:
-                        response = get_claude_response(message, conversation_history)
+                        response = get_claude_response(message, conversation_history, document_content=document_content)
                         model = "claude"
                     except Exception as e:
                         # Fallback to Gemini if Claude fails
-                        response = get_gemini_response(message, conversation_history)
+                        response = get_gemini_response(message, conversation_history, document_content=document_content)
                         model = "gemini"
             
             return LLMResponse(
