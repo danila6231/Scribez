@@ -378,8 +378,12 @@ function ChatWindow({ documentId }) {
         granularity: 'word'
       });
 
-      setDiffChanges(diffResponse.data.changes);
+            const computedChanges = diffResponse.data.changes;
+      setDiffChanges(computedChanges);
       setShowDiffView(true);
+
+      // Log the changes to verify they're not empty
+      console.log('Computed changes:', JSON.stringify(computedChanges));
 
       // Step 5: Stream summary of changes (while user reviews diff)
       const summaryMessageId = Date.now() + 1;
@@ -401,9 +405,7 @@ function ChatWindow({ documentId }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `Summarize the changes you made to the document based on the user's request: "${trimmedInput}". Be concise and specific about what was changed.`,
-          conversation_history: [],
-          document_content: newContent
+          message: `Summarize the changes you made to the document based on this json of changes: "${JSON.stringify(computedChanges)}". Be concise and explain your choice.`,
         }),
       });
 
