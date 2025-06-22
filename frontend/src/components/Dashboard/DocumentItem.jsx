@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import notesIcon from '../../assets/icons/notes.png';
 
 function DocumentItem({ document, formatTime, formatDate, onDelete }) {
   const [showActions, setShowActions] = useState(false);
@@ -60,9 +61,7 @@ function DocumentItem({ document, formatTime, formatDate, onDelete }) {
     <div className="document-item-wrapper">
     <Link to={`/editor/${document.id}`} className="document-item">
       <div className="document-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="#4285f4">
-          <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
-        </svg>
+        <img src={notesIcon} alt="Document" width="20" height="20" />
       </div>
       <div className="document-details">
         <span className="document-name">{document.title}</span>

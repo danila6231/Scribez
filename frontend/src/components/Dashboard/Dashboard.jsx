@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUser, useAuth, SignedIn, SignOutButton } from '@clerk/clerk-react';
 import DocumentGroup from './DocumentGroup';
 import { documentAPI, utils } from '../../services/api';
+import quillLogo from '../../assets/icons/quill-and-piece-of-paper.png';
 
 function Dashboard() {
   const { user } = useUser();
@@ -13,6 +14,17 @@ function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Apply dashboard background class to body
+  useEffect(() => {
+    document.body.classList.add('dashboard-page');
+    document.documentElement.classList.add('dashboard-page');
+    
+    return () => {
+      document.body.classList.remove('dashboard-page');
+      document.documentElement.classList.remove('dashboard-page');
+    };
+  }, []);
 
   // Fetch user documents when component mounts or userId changes
   useEffect(() => {
@@ -171,9 +183,7 @@ function Dashboard() {
         <div className="dashboard-nav">
           <div className="nav-left">
             <div className="logo">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="#4285f4">
-                <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
-              </svg>
+              <img src={quillLogo} alt="Skribez Logo" />
               <span className="logo-text">Skribez</span>
             </div>
           </div>
@@ -214,35 +224,27 @@ function Dashboard() {
             </div>
           )}
 
-          {/* Create New Document Section */}
-          <section className="create-section">
-            <h2>Start a new document</h2>
-            <div className="template-gallery">
-              <div 
-                className={`template-card new-doc ${isCreating ? 'creating' : ''}`} 
-                onClick={createNewDocument}
-                disabled={isCreating}
-              >
-                <div className="template-preview">
-                  {isCreating ? (
-                    <div className="creating-spinner"></div>
-                  ) : (
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="#4285f4">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                  </svg>
-                  )}
-                </div>
-                <span className="template-name">
-                  {isCreating ? 'Creating...' : 'Blank'}
-                </span>
-              </div>
-            </div>
-          </section>
+
 
           {/* Recent Documents Section */}
           <section className="documents-section">
             <div className="section-header">
               <h2>Recent documents</h2>
+              <button 
+                className={`create-btn ${isCreating ? 'creating' : ''}`}
+                onClick={createNewDocument}
+                disabled={isCreating}
+                title="Create a new document"
+              >
+                {isCreating ? (
+                  <div className="create-btn-spinner"></div>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                  </svg>
+                )}
+                <span className="create-btn-tooltip">Create a new document</span>
+              </button>
             </div>
 
             {filteredDocuments.length === 0 ? (
@@ -296,6 +298,8 @@ function Dashboard() {
           </section>
         </div>
       </main>
+
+
     </div>
   );
 }
