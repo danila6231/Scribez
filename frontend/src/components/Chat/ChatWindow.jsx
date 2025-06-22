@@ -2,9 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ChatMessage from './ChatMessage';
 
-// Get the API URL from environment variables or use relative path for local development
-const API_URL = import.meta.env.VITE_API_URL || '';
-
 function ChatWindow({ documentId }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -61,8 +58,8 @@ function ChatWindow({ documentId }) {
     setMessages(prev => [...prev, streamingMessage]);
 
     try {
-      // Use streaming endpoint with the correct base URL
-      const response = await fetch(`${API_URL}/api/chat/message/stream`, {
+      // Use streaming endpoint
+      const response = await fetch('/api/chat/message/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

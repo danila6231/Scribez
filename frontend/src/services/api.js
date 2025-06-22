@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { API_URL } from '../config/api';
 
-// Base API URL - now using configuration
-const API_BASE_URL = API_URL;
+// Base API URL - change this to your deployed backend URL
+const API_BASE_URL = 'https://aiberkeley-hack.onrender.com/api';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -97,6 +96,18 @@ export const documentAPI = {
       return response.data.title;
     } catch (error) {
       throw new Error(`Failed to fetch document title: ${error.response?.data?.detail || error.message}`);
+    }
+  },
+
+  // Update document title
+  updateDocumentTitle: async (documentId, title) => {
+    try {
+      const response = await api.put(`/documents/${documentId}`, {
+        title: title
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to update document title: ${error.response?.data?.detail || error.message}`);
     }
   },
 
@@ -200,14 +211,24 @@ export const diffAPI = {
 // Utility functions
 export const utils = {
   // Format document data from API response
-  formatDocument: (doc) => ({
-    id: doc.id,
-    title: doc.title,
-    lastModified: new Date(doc.updated_at),
-    preview: doc.content ? doc.content.substring(0, 100) + '...' : '',
-    wordCount: doc.content ? doc.content.split(/\s+/).length : 0,
-    createdAt: new Date(doc.created_at)
-  }),
+  formatDocument: (doc) => {
+    // Backend sends UTC timestamps without 'Z', need to add it for proper parsing
+    const parseUTCDate = (dateString) => {
+      if (dateString && !dateString.endsWith('Z') && !dateString.includes('+')) {
+        return new Date(dateString + 'Z');
+      }
+      return new Date(dateString);
+    };
+
+    return {
+      id: doc.id,
+      title: doc.title,
+      lastModified: parseUTCDate(doc.updated_at),
+      preview: doc.content ? doc.content.substring(0, 100) + '...' : '',
+      wordCount: doc.content ? doc.content.split(/\s+/).length : 0,
+      createdAt: parseUTCDate(doc.created_at)
+    };
+  },
 
   // Format chat message from API response
   formatChatMessage: (msg) => ({
