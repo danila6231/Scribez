@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_URL } from '../config/api';
 
-// Base API URL - change this to your deployed backend URL
-const API_BASE_URL = 'https://aiberkeley-hack.onrender.com/api';
+// Base API URL - now using configuration
+const API_BASE_URL = API_URL;
 
 // Create axios instance with base configuration
 const api = axios.create({

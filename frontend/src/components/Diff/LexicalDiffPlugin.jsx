@@ -3,6 +3,8 @@ import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
 import { $createHeadingNode } from '@lexical/rich-text';
 import { useEffect } from 'react';
 import DiffView from './DiffView';
+import { mergeRegister } from '@lexical/utils';
+import { API_URL } from '../../config/api';
 
 // Custom Lexical node for diff display
 export function DiffPlugin({ originalText, newText, changes }) {
@@ -75,7 +77,7 @@ export function useLexicalDiff(originalText, newText) {
 
   const computeAndDisplayDiff = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/diff/compute', {
+      const response = await fetch(`${API_URL}/diff/compute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
