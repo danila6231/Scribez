@@ -15,34 +15,26 @@ DATABASE_NAME = os.getenv("DATABASE_NAME")
 if not DATABASE_NAME:
     raise ValueError("DATABASE_NAME environment variable is required")
 
-# Get the CA certificate path
-ca = certifi.where()
+# Create SSL context with certifi certificates
+ssl_context = ssl.create_default_context(cafile=certifi.where())
 
 try:
-    print("HERE `")
+    print("Connecting to MongoDB...")
     client = AsyncIOMotorClient(
         MONGODB_URL,
-        ssl=True,
-        serverSelectionTimeoutMS=60000,
-        connectTimeoutMS=30000,
-        socketTimeoutMS=30000,
+        tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=30000,
+        connectTimeoutMS=20000,
+        socketTimeoutMS=20000,
     )
     # Test the connection
     client.admin.command('ping')
     print("MongoDB connection successful")
 except Exception as e:
     print(f"MongoDB connection error: {e}")
-    # Fallback connection attempt
-    client = AsyncIOMotorClient(
-        MONGODB_URL,
-        ssl=True,
-        tlsAllowInvalidCertificates=True,
-        tlsAllowInvalidHostnames=True
-    )
-    
-client = AsyncIOMotorClient(MONGODB_URL)
-database = client[DATABASE_NAME]
+    raise
 
+database = client[DATABASE_NAME]
 
 # Collections
 users_collection = database["users"]

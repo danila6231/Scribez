@@ -15,6 +15,7 @@ async def test_document_api():
                 "title": "My First Document"
             }
         )
+        print(f"Create response: {create_response}")
         response_data = create_response.json()
         print(f"Create response: {response_data}")
         document_id = response_data["id"]
