@@ -118,7 +118,7 @@ def groq_internet_search(message: str) -> str:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message}
             ],
-            model="compound-beta",  # Use configured responder model
+            model="compound-beta-mini",  # Use configured responder model
             temperature=0.7,
             max_tokens=1000
         )
