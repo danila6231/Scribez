@@ -2,6 +2,7 @@ import React from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard/Dashboard';
 import DiffTester from './components/Diff/DiffTester';
+import PrintView from './components/Print/PrintView';
 import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import LandingPage from './components/Landing/LandingPage';
 import { 
@@ -29,6 +30,15 @@ function ProtectedDashboard() {
   );
 }
 
+// Protected Print Component
+function ProtectedPrintView() {
+  return (
+    <SignedIn>
+      <PrintView />
+    </SignedIn>
+  );
+}
+
 function userId(){
   const { isLoaded, isSignedIn, userId } = useAuth();
 
@@ -52,6 +62,7 @@ function App() {
       <Route path="/editor/:documentId" element={<ProtectedEditor />} />
       <Route path="/dashboard" element={<ProtectedDashboard />} />
       <Route path="/diff-tester" element={<DiffTester />} />
+      <Route path="/print/:documentId" element={<ProtectedPrintView />} />
       {/* Catch-all route for invalid URLs */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
