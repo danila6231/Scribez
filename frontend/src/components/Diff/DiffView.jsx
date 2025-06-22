@@ -1,51 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import './diff.css';
 
-const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRejectAll }) => {
+const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRejectAll, acceptedChanges, rejectedChanges }) => {
   const [processedChanges, setProcessedChanges] = useState([]);
-  const [acceptedChanges, setAcceptedChanges] = useState(new Set());
-  const [rejectedChanges, setRejectedChanges] = useState(new Set());
+  const [localAcceptedChanges, setLocalAcceptedChanges] = useState(new Set());
+  const [localRejectedChanges, setLocalRejectedChanges] = useState(new Set());
+  
+  // Use external state if provided, otherwise use local state
+  const acceptedChangesSet = acceptedChanges || localAcceptedChanges;
+  const rejectedChangesSet = rejectedChanges || localRejectedChanges;
 
   useEffect(() => {
     // Process and sort changes
     const processed = changes.map((change, index) => ({
       ...change,
-      id: `change-${index}`
+      id: `change-${index}`,
+      index: index
     }));
     setProcessedChanges(processed);
   }, [changes]);
 
-  const handleAcceptChange = (changeId) => {
-    setAcceptedChanges(new Set([...acceptedChanges, changeId]));
-    setRejectedChanges(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(changeId);
-      return newSet;
-    });
-    if (onAccept) onAccept(changeId);
+  const handleAcceptChange = (changeId, changeIndex) => {
+    if (acceptedChanges && rejectedChanges) {
+      // External state management
+      onAccept(changeId, changes[changeIndex]);
+    } else {
+      // Local state management
+      setLocalAcceptedChanges(new Set([...localAcceptedChanges, changeId]));
+      setLocalRejectedChanges(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(changeId);
+        return newSet;
+      });
+      if (onAccept) onAccept(changeId, changes[changeIndex]);
+    }
   };
 
-  const handleRejectChange = (changeId) => {
-    setRejectedChanges(new Set([...rejectedChanges, changeId]));
-    setAcceptedChanges(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(changeId);
-      return newSet;
-    });
-    if (onReject) onReject(changeId);
+  const handleRejectChange = (changeId, changeIndex) => {
+    if (acceptedChanges && rejectedChanges) {
+      // External state management
+      onReject(changeId, changes[changeIndex]);
+    } else {
+      // Local state management
+      setLocalRejectedChanges(new Set([...localRejectedChanges, changeId]));
+      setLocalAcceptedChanges(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(changeId);
+        return newSet;
+      });
+      if (onReject) onReject(changeId, changes[changeIndex]);
+    }
   };
 
   const handleAcceptAll = () => {
     const allIds = processedChanges.map(c => c.id);
-    setAcceptedChanges(new Set(allIds));
-    setRejectedChanges(new Set());
+    setLocalAcceptedChanges(new Set(allIds));
+    setLocalRejectedChanges(new Set());
     if (onAcceptAll) onAcceptAll();
   };
 
   const handleRejectAll = () => {
     const allIds = processedChanges.map(c => c.id);
-    setRejectedChanges(new Set(allIds));
-    setAcceptedChanges(new Set());
+    setLocalRejectedChanges(new Set(allIds));
+    setLocalAcceptedChanges(new Set());
     if (onRejectAll) onRejectAll();
   };
 
@@ -60,7 +77,7 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
     
     // Track deletions and replacements by their position range
     processedChanges.forEach(change => {
-      if ((change.type === 'delete' || change.type === 'replace') && !rejectedChanges.has(change.id)) {
+      if ((change.type === 'delete' || change.type === 'replace') && !rejectedChangesSet.has(change.id)) {
         for (let pos = change.start_pos; pos < change.end_pos; pos++) {
           positionMap.set(pos, { type: change.type, change });
         }
@@ -76,36 +93,36 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
     while (currentPos <= originalText.length) {
       // Check for insertions at this position
       const insertions = processedChanges.filter(
-        c => c.type === 'insert' && c.start_pos === currentPos && !rejectedChanges.has(c.id)
+        c => c.type === 'insert' && c.start_pos === currentPos && !rejectedChangesSet.has(c.id)
       );
       
       insertions.forEach(insertion => {
-        const isAccepted = acceptedChanges.has(insertion.id);
-        const isPending = !isAccepted && !rejectedChanges.has(insertion.id);
+        const isAccepted = acceptedChangesSet.has(insertion.id);
+        const isPending = !isAccepted && !rejectedChangesSet.has(insertion.id);
         
         elements.push(
           <span key={`insert-${elementKey++}`} className="diff-change-wrapper">
-            <span className={`diff-inserted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
-              {insertion.new_text}
-            </span>
             {isPending && (
               <span className="diff-controls">
                 <button 
                   className="diff-accept-btn" 
-                  onClick={() => handleAcceptChange(insertion.id)}
+                  onClick={() => handleAcceptChange(insertion.id, insertion.index)}
                   title="Accept change"
                 >
                   ✓
                 </button>
                 <button 
                   className="diff-reject-btn" 
-                  onClick={() => handleRejectChange(insertion.id)}
+                  onClick={() => handleRejectChange(insertion.id, insertion.index)}
                   title="Reject change"
                 >
                   ✗
                 </button>
               </span>
             )}
+            <span className={`diff-inserted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
+              {insertion.new_text}
+            </span>
           </span>
         );
       });
@@ -117,8 +134,8 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
       const changeAtPos = positionMap.get(currentPos);
       
       if (changeAtPos) {
-        const isAccepted = acceptedChanges.has(changeAtPos.change.id);
-        const isPending = !isAccepted && !rejectedChanges.has(changeAtPos.change.id);
+        const isAccepted = acceptedChangesSet.has(changeAtPos.change.id);
+        const isPending = !isAccepted && !rejectedChangesSet.has(changeAtPos.change.id);
         
         // Find the full change range
         let changeEnd = currentPos;
@@ -131,57 +148,57 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
           // Add the deleted text
           elements.push(
             <span key={`delete-${elementKey++}`} className="diff-change-wrapper">
-              <span className={`diff-deleted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
-                {originalText.substring(currentPos, changeEnd)}
-              </span>
               {isPending && (
                 <span className="diff-controls">
                   <button 
                     className="diff-accept-btn" 
-                    onClick={() => handleAcceptChange(changeAtPos.change.id)}
+                    onClick={() => handleAcceptChange(changeAtPos.change.id, changeAtPos.change.index)}
                     title="Accept deletion"
                   >
                     ✓
                   </button>
                   <button 
                     className="diff-reject-btn" 
-                    onClick={() => handleRejectChange(changeAtPos.change.id)}
+                    onClick={() => handleRejectChange(changeAtPos.change.id, changeAtPos.change.index)}
                     title="Reject deletion"
                   >
                     ✗
                   </button>
                 </span>
               )}
+              <span className={`diff-deleted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
+                {originalText.substring(currentPos, changeEnd)}
+              </span>
             </span>
           );
         } else if (changeAtPos.type === 'replace') {
           // Add both the deleted text and the new text for replacements
           elements.push(
             <span key={`replace-${elementKey++}`} className="diff-change-wrapper">
-              <span className={`diff-deleted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
-                {changeAtPos.change.old_text}
-              </span>
-              <span className={`diff-inserted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
-                {changeAtPos.change.new_text}
-              </span>
               {isPending && (
                 <span className="diff-controls">
                   <button 
                     className="diff-accept-btn" 
-                    onClick={() => handleAcceptChange(changeAtPos.change.id)}
+                    onClick={() => handleAcceptChange(changeAtPos.change.id, changeAtPos.change.index)}
                     title="Accept replacement"
                   >
                     ✓
                   </button>
                   <button 
                     className="diff-reject-btn" 
-                    onClick={() => handleRejectChange(changeAtPos.change.id)}
+                    onClick={() => handleRejectChange(changeAtPos.change.id, changeAtPos.change.index)}
                     title="Reject replacement"
                   >
                     ✗
                   </button>
                 </span>
               )}
+              <span className={`diff-deleted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
+                {changeAtPos.change.old_text}
+              </span>
+              <span className={`diff-inserted ${isAccepted ? 'accepted' : ''} ${isPending ? 'pending' : ''}`}>
+                {changeAtPos.change.new_text}
+              </span>
             </span>
           );
         }
@@ -204,7 +221,7 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
           if (change.type === 'insert' && 
               change.start_pos > currentPos && 
               change.start_pos < nextChangePos &&
-              !rejectedChanges.has(change.id)) {
+              !rejectedChangesSet.has(change.id)) {
             nextChangePos = change.start_pos;
           }
         });
@@ -226,7 +243,7 @@ const DiffView = ({ originalText, changes, onAccept, onReject, onAcceptAll, onRe
   };
 
   const pendingChangesCount = processedChanges.filter(
-    c => !acceptedChanges.has(c.id) && !rejectedChanges.has(c.id)
+    c => !acceptedChangesSet.has(c.id) && !rejectedChangesSet.has(c.id)
   ).length;
 
   return (

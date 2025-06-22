@@ -69,7 +69,7 @@
 /* Change wrapper for positioning controls */
 .diff-change-wrapper {
   position: relative;
-  display: inline;
+  display: inline-block;
 }
 
 /* Deleted text - blue strikethrough */
@@ -142,12 +142,9 @@
 
 /* Inline controls */
 .diff-controls {
-  position: absolute;
-  display: inline-flex;
+  display: flex;
   gap: 2px;
-  margin-left: 4px;
-  top: 50%;
-  transform: translateY(-50%);
+  margin-bottom: 4px;
   z-index: 10;
 }
 
