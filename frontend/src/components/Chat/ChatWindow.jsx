@@ -197,15 +197,26 @@ function ChatWindow({ documentId }) {
 
       <div className="chat-input-container">
         <form onSubmit={handleSubmit} className="chat-input-form">
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             className="chat-input"
             placeholder="Ask for writing help..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
+            rows={1}
+            style={{
+              resize: 'none',
+              minHeight: '40px',
+              maxHeight: '120px',
+              height: 'auto'
+            }}
+            onInput={(e) => {
+              // Auto-resize textarea
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
           />
           <button
             type="submit"
