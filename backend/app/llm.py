@@ -104,6 +104,28 @@ def analyze_query_complexity(message: str, conversation_history: Optional[List[D
             confidence=1
         )
 
+def groq_internet_search(message: str) -> str:
+    """Use Groq to search the internet for information"""
+
+    system_prompt = '''You are a helpful research assistant integrated into a text editor.
+    Your goal is to perform a web search and provide a concise, well-structured summary 
+    on the given topic. The summary should be written in clear, professional language, 
+    suitable for a research paper or report. Do not include conversational filler. 
+    Given that today's date is June 22, 2025, focus on the latest developments.'''
+    try:
+        response = groq_client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message}
+            ],
+            model="compound-beta",  # Use configured responder model
+            temperature=0.7,
+            max_tokens=1000
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error during internet search: {str(e)}"
+
 def get_groq_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None) -> Union[str, Generator[str, None, None]]:
     """Get response from Groq for simple queries"""
     try:
