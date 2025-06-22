@@ -1,7 +1,19 @@
 /* Dashboard Styles */
 .dashboard-container {
   min-height: 100vh;
-  background-color: #fafafa;
+  height: 100%;
+  background-color: #CCCCFF;
+}
+
+/* Ensure body and html have the purple background too */
+body.dashboard-page {
+  background-color: #CCCCFF !important;
+  margin: 0;
+  padding: 0;
+}
+
+html.dashboard-page {
+  background-color: #CCCCFF !important;
 }
 
 /* Header */
@@ -27,6 +39,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.nav-left .logo img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .logo-text {
@@ -78,6 +96,19 @@
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* Logout button styling */
+.nav-right .cta-button.primary {
+  background: transparent;
+  color: #4B0082;
+  border: 2px solid #4B0082;
+  font-weight: 600;
+}
+
+.nav-right .cta-button.primary:hover {
+  background: #4B0082;
+  color: white;
 }
 
 .user-name {
@@ -204,10 +235,10 @@
 }
 
 .document-items {
-  background: white;
+  background: transparent;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  overflow: hidden;
+  border: none;
+  overflow: visible;
 }
 
 .document-item {
@@ -216,12 +247,15 @@
   padding: 12px 16px;
   text-decoration: none;
   color: inherit;
-  border-bottom: 1px solid #f1f3f4;
+  border: 1px solid black;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: white;
   transition: background-color 0.2s ease;
 }
 
 .document-item:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .document-item:hover {
@@ -910,5 +944,116 @@
   
   .editor-actions {
     gap: 6px;
+  }
+}
+
+/* Create Document Button */
+.create-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #8A2BE2;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: visible;
+}
+
+.create-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
+  background: #7B68EE;
+}
+
+.create-btn:active {
+  transform: translateY(0) scale(1.02);
+  box-shadow: 0 3px 10px rgba(138, 43, 226, 0.35);
+}
+
+.create-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.create-btn.creating {
+  animation: create-btn-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes create-btn-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Create Button Tooltip */
+.create-btn-tooltip {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.create-btn-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: rgba(0, 0, 0, 0.8);
+}
+
+.create-btn:hover .create-btn-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+/* Create Button Spinner */
+.create-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Mobile responsive Create Button */
+@media (max-width: 768px) {
+  .create-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .create-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .create-btn-tooltip {
+    display: none; /* Hide tooltip on mobile */
   }
 } 
