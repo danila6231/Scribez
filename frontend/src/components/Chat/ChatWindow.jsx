@@ -514,6 +514,13 @@ function ChatWindow({ documentId }) {
 
   return (
     <div className="chat-container">
+      <style>
+        {`
+          .chat-input::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+      </style>
       <div className="chat-header">
         <h2>AI Writing Assistant</h2>
         <div className="mode-toggle">
@@ -747,7 +754,9 @@ function ChatWindow({ documentId }) {
                 minHeight: '40px',
                 maxHeight: '120px',
                 height: 'auto',
-                paddingLeft: mode === 'ask' ? '48px' : '16px'
+                paddingLeft: mode === 'ask' ? '48px' : '16px',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
               }}
               onInput={(e) => {
                 // Auto-resize textarea
