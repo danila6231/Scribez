@@ -122,19 +122,30 @@ async def get_chat_history(document_id: str):
 
 @router.put("/{document_id}")
 async def update_document_content(document_id: str, update: DocumentUpdate):
-    """Update document content"""
+    """Update document content and/or title"""
     if not validate_uuid(document_id):
         raise HTTPException(status_code=400, detail="Invalid document ID format")
+    
+    # Build update fields dynamically
+    update_fields = {"updated_at": datetime.utcnow()}
+    
+    if update.content is not None:
+        update_fields["content"] = update.content
+    
+    if update.title is not None:
+        update_fields["title"] = update.title
+    
+    # Ensure at least one field is being updated
+    if update.content is None and update.title is None:
+        raise HTTPException(
+            status_code=400, 
+            detail="At least one of 'content' or 'title' must be provided"
+        )
     
     # Update document
     result = await documents_collection.update_one(
         {"_id": document_id},
-        {
-            "$set": {
-                "content": update.content,
-                "updated_at": datetime.utcnow()
-            }
-        }
+        {"$set": update_fields}
     )
     
     if result.matched_count == 0:

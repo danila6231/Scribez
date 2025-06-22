@@ -65,7 +65,8 @@ class DocumentCreate(BaseModel):
     title: str
 
 class DocumentUpdate(BaseModel):
-    content: str
+    content: Optional[str] = None
+    title: Optional[str] = None
 
 class DocumentResponse(BaseModel):
     id: str

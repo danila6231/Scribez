@@ -40,6 +40,27 @@ async def test_document_api():
         )
         print(f"Update response: {update_response.json()}")
         
+        # 4b. Update document title
+        print("\n4b. Updating document title...")
+        update_title_response = await client.put(
+            f"{BASE_URL}/{document_id}",
+            json={
+                "title": "Updated Document Title"
+            }
+        )
+        print(f"Update title response: {update_title_response.json()}")
+        
+        # 4c. Update both title and content
+        print("\n4c. Updating both title and content...")
+        update_both_response = await client.put(
+            f"{BASE_URL}/{document_id}",
+            json={
+                "title": "Final Updated Title",
+                "content": "# Final Updated Document\n\nThis update changes both title and content at once."
+            }
+        )
+        print(f"Update both response: {update_both_response.json()}")
+        
         # 5. Get document content
         print("\n5. Getting document content...")
         content_response = await client.get(f"{BASE_URL}/{document_id}/content")
