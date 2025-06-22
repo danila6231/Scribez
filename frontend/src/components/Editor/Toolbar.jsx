@@ -44,19 +44,17 @@ function Toolbar() {
       const elementFormat = element.getFormatType();
       setAlignment(elementFormat || 'left');
       
-      // Determine block type
-      const elementDOM = element.getDOMNode?.();
-      if (elementDOM) {
-        const tagName = elementDOM.tagName.toLowerCase();
-        if (tagName.startsWith('h')) {
-          setBlockType(tagName);
-        } else if (tagName === 'blockquote') {
-          setBlockType('quote');
-        } else if (tagName === 'pre') {
-          setBlockType('code');
-        } else {
-          setBlockType('paragraph');
-        }
+      // Determine block type using Lexical's built-in type checking
+      const elementType = element.getType();
+      if (elementType === 'heading') {
+        const headingTag = element.getTag();
+        setBlockType(headingTag);
+      } else if (elementType === 'quote') {
+        setBlockType('quote');
+      } else if (elementType === 'code') {
+        setBlockType('code');
+      } else {
+        setBlockType('paragraph');
       }
     }
   }, []);
@@ -247,23 +245,26 @@ function Toolbar() {
       </button>
       <div className="toolbar-divider" />
       <button
-        className="toolbar-button"
+        className={`toolbar-button ${blockType === 'h1' ? 'active' : ''}`}
         onClick={() => insertHeading('h1')}
         aria-label="Heading 1"
+        title="Heading 1 (# text)"
       >
         H1
       </button>
       <button
-        className="toolbar-button"
+        className={`toolbar-button ${blockType === 'h2' ? 'active' : ''}`}
         onClick={() => insertHeading('h2')}
         aria-label="Heading 2"
+        title="Heading 2 (## text)"
       >
         H2
       </button>
       <button
-        className="toolbar-button"
+        className={`toolbar-button ${blockType === 'h3' ? 'active' : ''}`}
         onClick={() => insertHeading('h3')}
         aria-label="Heading 3"
+        title="Heading 3 (### text)"
       >
         H3
       </button>
@@ -291,7 +292,7 @@ function Toolbar() {
         1. List
       </button>
       <button
-        className="toolbar-button"
+        className={`toolbar-button ${blockType === 'quote' ? 'active' : ''}`}
         onClick={() => insertQuote()}
         aria-label="Quote"
         title="Blockquote (> text)"

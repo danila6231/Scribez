@@ -2,7 +2,7 @@ import React from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard/Dashboard';
 import DiffTester from './components/Diff/DiffTester';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import LandingPage from './components/Landing/LandingPage';
 import { 
   SignedIn
@@ -48,10 +48,12 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/editor" element={<ProtectedEditor />} />
+      <Route path="/editor" element={<Navigate to="/dashboard" replace />} />
       <Route path="/editor/:documentId" element={<ProtectedEditor />} />
       <Route path="/dashboard" element={<ProtectedDashboard />} />
       <Route path="/diff-tester" element={<DiffTester />} />
+      {/* Catch-all route for invalid URLs */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

@@ -5,6 +5,7 @@ import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
 import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
 import { TRANSFORMERS } from '@lexical/markdown';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
@@ -178,6 +179,15 @@ function Editor() {
       });
       
       console.log('✅ Content loaded successfully into editor');
+      
+      // Force a re-render to ensure content is visible
+      setTimeout(() => {
+        if (window.lexicalEditor) {
+          window.lexicalEditor.focus();
+          // Immediately blur to not keep cursor active
+          setTimeout(() => window.lexicalEditor.blur(), 50);
+        }
+      }, 100);
       
     } catch (err) {
       console.error('❌ Error loading content into editor:', err);
@@ -390,6 +400,22 @@ function Editor() {
     }
   };
 
+  // Custom plugin to initialize editor immediately
+  function InitializeEditorPlugin() {
+    const [editor] = useLexicalComposerContext();
+    
+    React.useEffect(() => {
+      // Store editor reference and mark as ready immediately
+      window.lexicalEditor = editor;
+      if (!editorReady) {
+        console.log('🚀 Editor initialized and ready');
+        setEditorReady(true);
+      }
+    }, [editor]);
+    
+    return null;
+  }
+
   return (
     <div className="editor-container">
       <div className="editor-header">
@@ -509,6 +535,7 @@ function Editor() {
           <ListPlugin />
           <LinkPlugin />
           <TabIndentationPlugin />
+          <InitializeEditorPlugin />
         </div>
       </LexicalComposer>
     </div>
