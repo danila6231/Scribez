@@ -131,7 +131,7 @@ return (
 
     <footer className="landing-footer">
         <div className="footer-container">
-        <p>&copy; 2024 Skribez. Made with ❤️ by the QuackHacks Tech Team.</p>
+        <p>&copy; 2024 Skribez. Made with ❤️</p>
         </div>
     </footer>
     </div>

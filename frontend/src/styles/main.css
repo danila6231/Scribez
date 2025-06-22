@@ -132,13 +132,13 @@ body {
 }
 
 .toolbar-button.active {
-  background-color: #e3f2fd;
-  border-color: #2196F3;
-  color: #2196F3;
+  background-color: #e6d9f7; /* Light Purple */
+  border-color: #9b59b6;   /* Medium Purple */
+  color: #9b59b6;         /* Medium Purple */
 }
 
 .toolbar-button.active svg {
-  color: #2196F3;
+  color: #9b59b6; /* Medium Purple */
 }
 
 .toolbar-divider {
@@ -525,6 +525,7 @@ body {
 .chat-input-form {
   display: flex;
   gap: 8px;
+  align-items: flex-end;
 }
 
 .chat-input-wrapper {
@@ -555,11 +556,11 @@ body {
 
 .web-search-toggle:hover {
   background: #f0f0f0;
-  color: #666;
+  color: #667;
 }
 
 .web-search-toggle.active {
-  color: #2196F3;
+  color: #afd7f7;
   background: #e3f2fd;
 }
 
@@ -588,7 +589,7 @@ body {
 }
 
 .chat-input:focus {
-  border-color: #2196F3;
+  border-color: #c8b4e1;
 }
 
 .chat-input.edit-mode {
@@ -606,7 +607,7 @@ body {
 
 .chat-send-button {
   padding: 10px 20px;
-  background-color: #2196F3;
+  background-color: #bc65eb;
   color: white;
   border: none;
   border-radius: 24px;

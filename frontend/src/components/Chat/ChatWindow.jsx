@@ -747,7 +747,8 @@ function ChatWindow({ documentId }) {
                 minHeight: '40px',
                 maxHeight: '120px',
                 height: 'auto',
-                paddingLeft: mode === 'ask' ? '48px' : '16px'
+                paddingLeft: mode === 'ask' ? '48px' : '16px',
+                overflow: 'hidden'
               }}
               onInput={(e) => {
                 // Auto-resize textarea
