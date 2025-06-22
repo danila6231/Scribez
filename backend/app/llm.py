@@ -24,9 +24,9 @@ LLM_CONFIG = {
     }
 }
 
-GENERAL_SYSTEM_PROMPT = '''You are a helpful research assistant integrated into a text editor. Your goal is to perform a web search and provide a concise, well-structured summary on the given topic. The summary should be written in clear, professional language, suitable for a research paper or report. Do not include conversational filler. Given that today's date is June 22, 2025, focus on the latest developments. Stick to the undergrad level of writing. DO NOT ADD UNNECESSARY DETAILS.'''
+GENERAL_SYSTEM_PROMPT = '''You are a helpful research assistant integrated into a text editor. Your goal is to perform a web search and provide a concise, well-structured summary on the given topic. The summary should be written in clear, professional language, suitable for a research paper or report. Do not include conversational filler. Given that today's date is June 22, 2025, focus on the latest developments. Stick to the undergrad level of writing. DO NOT ADD UNNECESSARY DETAILS. ALWAYS GET STRAIGHT TO THE POINT!'''
 
-EDIT_SYSTEM_PROMPT = """You are a document editor. When given a document and an edit request, you should return ONLY the edited document content. Do not include any explanations, comments, or additional text. Just return the modified document"""
+EDIT_SYSTEM_PROMPT = """You are a document editor. When given a document and an edit request, you should return ONLY the edited document content. Do not include any explanations, comments, or additional text. Just return the modified document."""
 
 # Initialize clients
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -158,7 +158,7 @@ def get_groq_response(message: str, conversation_history: Optional[List[Dict[str
             model=LLM_CONFIG["groq"]["responder_model"],  # Use configured responder model
             messages=messages,
             temperature=0.7,
-            max_tokens=1000,
+            max_tokens=4000,
             stream=stream
         )
         
@@ -214,7 +214,7 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
                     model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
                     system=system_prompt,
                     messages=messages,
-                    max_tokens=1000,
+                    max_tokens=4000,
                     temperature=0.7,
                     tools=[{
                         "type": "web_search_20250305",
@@ -230,7 +230,7 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
                 model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
                 system=system_prompt,
                 messages=messages,
-                max_tokens=2000,
+                max_tokens=4000,
                 temperature=0.7,
                 tools=[{
                     "type": "web_search_20250305",

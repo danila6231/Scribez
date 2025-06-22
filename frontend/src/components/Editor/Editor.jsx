@@ -430,26 +430,13 @@ function Editor() {
       }, 3000); // Save after 3 seconds of inactivity
     }
     
-    // Dynamically adjust editor height to snap to page-like increments
+    // Let the editor grow naturally with content (continuous page)
     editor.update(() => {
       const rootElement = editor.getRootElement();
       if (rootElement) {
-        const pageHeight = 1056; // From CSS --page-height
-        const pageSpacing = 24;  // From CSS --page-spacing
-        const pageWithSpacing = pageHeight + pageSpacing;
-
-        const scrollHeight = rootElement.scrollHeight;
-        
-        // Calculate the number of pages needed to contain the content
-        const numPages = Math.max(1, Math.ceil(scrollHeight / pageWithSpacing));
-
-        // Calculate the total pixel height required for these pages
-        const newHeight = (numPages * pageWithSpacing) - pageSpacing;
-
-        // Apply the new height to the editor container
-        if (rootElement.style.height !== `${newHeight}px`) {
-          rootElement.style.height = `${newHeight}px`;
-        }
+        // Remove any fixed height and let it grow naturally
+        rootElement.style.height = 'auto';
+        rootElement.style.minHeight = '400px'; // Minimum height for usability
       }
     });
   };

@@ -148,56 +148,25 @@ body {
 
 .editor-content {
   flex: 1;
-  padding: 32px;
+  padding: 32px 32px 0 32px; /* Remove bottom padding */
   overflow-y: auto;
   background-color: #f0f2f5;
-
-  --page-height: 1056px; /* Approx. 11in at 96dpi */
-  --page-spacing: 24px;
 }
 
 .editor-content .ContentEditable__root {
   position: relative;
   z-index: 1;
-  min-height: 1056px; /* Ensure at least one full page shows */
+  min-height: 100vh; /* Always fill the full viewport height */
   outline: none;
   font-size: 16px;
   line-height: 1.6 !important;
   
-  padding: 80px;
+  padding: 80px 80px 100vh 80px; /* Add massive bottom padding to extend white area infinitely */
   max-width: 850px;
   margin: 0 auto;
-  border-radius: 4px;
+  border-radius: 4px 4px 0 0; /* Remove bottom border radius */
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-
-  /* Create the repeating page background */
-  background-image: repeating-linear-gradient(
-    to bottom,
-    #fff 0,
-    #fff var(--page-height),
-    transparent var(--page-height),
-    transparent calc(var(--page-height) + var(--page-spacing))
-  );
-  background-size: 100% calc(var(--page-height) + var(--page-spacing));
-
-  /* Mask the text to hide it in the gaps between pages */
-  -webkit-mask-image: repeating-linear-gradient(
-    to bottom,
-    black 0,
-    black var(--page-height),
-    transparent var(--page-height),
-    transparent calc(var(--page-height) + var(--page-spacing))
-  );
-  -webkit-mask-size: 100% calc(var(--page-height) + var(--page-spacing));
-
-  mask-image: repeating-linear-gradient(
-    to bottom,
-    black 0,
-    black var(--page-height),
-    transparent var(--page-height),
-    transparent calc(var(--page-height) + var(--page-spacing))
-  );
-  mask-size: 100% calc(var(--page-height) + var(--page-spacing));
+  background-color: #fff; /* Simple white background for continuous editing */
 }
 
 /* Ensure consistent spacing for all editor elements */
@@ -206,8 +175,13 @@ body {
 }
 
 .editor-content .ContentEditable__root p {
-  margin: 0 0 15px 0 !important;
+  margin: 0 0 8px 0 !important; /* Reduced spacing for infinite feel */
   line-height: 1.6 !important;
+}
+
+/* Remove any potential last paragraph margin for true infinite feel */
+.editor-content .ContentEditable__root p:last-child {
+  margin-bottom: 0 !important;
 }
 
 /* Chat Styles */
