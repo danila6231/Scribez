@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ChatMessage from './ChatMessage';
-import { $convertToMarkdownString } from '@lexical/markdown';
+import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
 import { TRANSFORMERS } from '@lexical/markdown';
+import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
 import DiffView from '../Diff/DiffView';
+import { testDiffApplication } from '../../utils/testDiffApplication';
 
 // Get the API URL from environment variables or use relative path for local development
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -18,62 +20,82 @@ function ChatWindow({ documentId }) {
   const [showDiffView, setShowDiffView] = useState(false);
   const [diffChanges, setDiffChanges] = useState([]);
   const [originalContent, setOriginalContent] = useState('');
+  const [acceptedChangeIds, setAcceptedChangeIds] = useState(new Set());
+  const [rejectedChangeIds, setRejectedChangeIds] = useState(new Set());
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
   // Function to apply changes to the editor
   const applyChangesToEditor = (changes) => {
-    if (!window.lexicalEditor) return;
+    if (!window.lexicalEditor) {
+      console.error('❌ Lexical editor not available');
+      return;
+    }
+
+    if (!changes || changes.length === 0) {
+      console.log('⚠️ No changes to apply');
+      return;
+    }
+
+    console.log('✅ Applying', changes.length, 'changes to editor');
     
-    // Sort changes by position to apply them correctly
+    // Sort changes by position (deletions/replacements before insertions at same position)
     const sortedChanges = [...changes].sort((a, b) => {
-      // Apply deletions and replacements first, then insertions
-      // Within each type, apply from end to beginning to maintain positions
-      if (a.type === b.type) {
-        return b.start_pos - a.start_pos;
+      // First by start position
+      if (a.start_pos !== b.start_pos) {
+        return b.start_pos - a.start_pos; // Reverse order for processing
       }
-      return (a.type === 'delete' || a.type === 'replace') ? -1 : 1;
+      // Then prioritize deletes/replaces over inserts
+      const typeOrder = { 'delete': 0, 'replace': 0, 'insert': 1 };
+      return typeOrder[a.type] - typeOrder[b.type];
     });
 
-    // Build the new text
+    // Build the new text by applying changes from end to beginning
     let newText = originalContent;
-    let offset = 0;
-
+    
     sortedChanges.forEach(change => {
+      console.log(`Applying ${change.type} at ${change.start_pos}-${change.end_pos}`);
+      
       if (change.type === 'delete') {
-        const startPos = change.start_pos + offset;
-        const endPos = change.end_pos + offset;
-        newText = newText.substring(0, startPos) + newText.substring(endPos);
-        offset -= (endPos - startPos);
+        newText = newText.substring(0, change.start_pos) + newText.substring(change.end_pos);
       } else if (change.type === 'insert') {
-        const pos = change.start_pos + offset;
-        newText = newText.substring(0, pos) + change.new_text + newText.substring(pos);
-        offset += change.new_text.length;
+        newText = newText.substring(0, change.start_pos) + change.new_text + newText.substring(change.start_pos);
       } else if (change.type === 'replace') {
-        const startPos = change.start_pos + offset;
-        const endPos = change.end_pos + offset;
-        newText = newText.substring(0, startPos) + change.new_text + newText.substring(endPos);
-        offset += change.new_text.length - (endPos - startPos);
+        newText = newText.substring(0, change.start_pos) + change.new_text + newText.substring(change.end_pos);
       }
     });
 
     // Update the Lexical editor with the new content
     window.lexicalEditor.update(() => {
-      const root = window.$getRoot();
+      const root = $getRoot();
       root.clear();
       
-      // Convert the new text back to Lexical nodes
-      // This is a simplified version - you might need to use proper markdown parsing
-      const paragraphs = newText.split('\n\n');
-      paragraphs.forEach((paragraph, index) => {
-        if (paragraph.trim()) {
-          const paragraphNode = window.$createParagraphNode();
-          const textNode = window.$createTextNode(paragraph);
-          paragraphNode.append(textNode);
-          root.append(paragraphNode);
+      // Convert markdown-style content back to Lexical nodes
+      try {
+        $convertFromMarkdownString(newText, TRANSFORMERS);
+      } catch (error) {
+        // Fallback to simple paragraph splitting if markdown conversion fails
+        console.warn('Markdown conversion failed, falling back to simple text:', error);
+        
+        if (newText && newText.trim()) {
+          const paragraphs = newText.split('\n\n');
+          paragraphs.forEach((paragraph) => {
+            if (paragraph.trim()) {
+              const paragraphNode = $createParagraphNode();
+              const textNode = $createTextNode(paragraph);
+              paragraphNode.append(textNode);
+              root.append(paragraphNode);
+            }
+          });
+        } else {
+          // Create empty paragraph for empty content
+          const paragraph = $createParagraphNode();
+          root.append(paragraph);
         }
-      });
+      }
     });
+    
+    console.log('✅ Changes applied successfully');
   };
 
   // Load chat history when document changes
@@ -363,7 +385,7 @@ function ChatWindow({ documentId }) {
 
       // Step 2: Generate new document version
       const editResponse = await axios.post(`${API_URL}/api/chat/message`, {
-        message: `Based on THE  plan: "${planContent}", apply the following edit to the document: ${trimmedInput}. DO EXACTLY WHAT IS ASKED, DO NOT ADD MODIFY ANYTHING ELSE. Return ONLY the edited document content, nothing else.`,
+        message: `Based on this plan: "${planContent}", apply the following edit to the document: ${trimmedInput}. DO EXACTLY WHAT IS ASKED, DO NOT ADD MODIFY ANYTHING ELSE. Return ONLY the edited document content, nothing else.`,
         conversation_history: [],
         document_content: documentContent,
         edit_mode: true
@@ -378,77 +400,79 @@ function ChatWindow({ documentId }) {
         granularity: 'word'
       });
 
-      setDiffChanges(diffResponse.data.changes);
+      const computedChanges = diffResponse.data.changes;
+      setDiffChanges(computedChanges);
       setShowDiffView(true);
 
-      // // Step 5: Stream summary of changes (while user reviews diff)
-      // const summaryMessageId = Date.now() + 1;
-      // const summaryMessage = {
-      //   id: summaryMessageId,
-      //   content: '',
-      //   role: 'assistant',
-      //   timestamp: new Date().toISOString(),
-      //   isStreaming: true,
-      //   model: 'summarizing...',
-      //   isSummary: true
-      // };
+      // Log the changes to verify they're not empty
+      console.log('Computed changes:', JSON.stringify(computedChanges));
+
+      // Step 5: Stream summary of changes (while user reviews diff)
+      const summaryMessageId = Date.now() + 1;
+      const summaryMessage = {
+        id: summaryMessageId,
+        content: '',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+        isStreaming: true,
+        model: 'summarizing...',
+        isSummary: true
+      };
       
-      // setMessages(prev => [...prev, summaryMessage]);
+      setMessages(prev => [...prev, summaryMessage]);
 
-      // const summaryResponse = await fetch(`${API_URL}/api/chat/message/stream`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     message: `Summarize the changes you made to the document based on the user's request: "${trimmedInput}". Be concise and specific about what was changed.`,
-      //     conversation_history: [],
-      //     document_content: newContent
-      //   }),
-      // });
+      const summaryResponse = await fetch(`${API_URL}/api/chat/message/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `Summarize the changes you made to the document based on this json of changes: "${JSON.stringify(computedChanges)}". Be concise and explain your choice.`,
+        }),
+      });
 
-      // const summaryReader = summaryResponse.body.getReader();
-      // const summaryDecoder = new TextDecoder();
-      // let summaryBuffer = '';
+      const summaryReader = summaryResponse.body.getReader();
+      const summaryDecoder = new TextDecoder();
+      let summaryBuffer = '';
 
-      // while (true) {
-      //   const { done, value } = await summaryReader.read();
-      //   if (done) break;
+      while (true) {
+        const { done, value } = await summaryReader.read();
+        if (done) break;
 
-      //   summaryBuffer += summaryDecoder.decode(value, { stream: true });
-      //   const lines = summaryBuffer.split('\n');
-      //   summaryBuffer = lines.pop() || '';
+        summaryBuffer += summaryDecoder.decode(value, { stream: true });
+        const lines = summaryBuffer.split('\n');
+        summaryBuffer = lines.pop() || '';
 
-      //   for (const line of lines) {
-      //     if (line.startsWith('data: ')) {
-      //       try {
-      //         const data = JSON.parse(line.slice(6));
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
               
-      //         if (data.type === 'content') {
-      //           setMessages(prev => prev.map(msg => 
-      //             msg.id === summaryMessageId 
-      //               ? { ...msg, content: msg.content + data.content }
-      //               : msg
-      //           ));
-      //         } else if (data.type === 'model') {
-      //           setMessages(prev => prev.map(msg => 
-      //             msg.id === summaryMessageId 
-      //               ? { ...msg, model: data.model }
-      //               : msg
-      //           ));
-      //         } else if (data.type === 'done') {
-      //           setMessages(prev => prev.map(msg => 
-      //             msg.id === summaryMessageId 
-      //               ? { ...msg, isStreaming: false }
-      //               : msg
-      //           ));
-      //         }
-      //       } catch (parseError) {
-      //         console.error('Error parsing SSE data:', parseError);
-      //       }
-      //     }
-      //   }
-      // }
+              if (data.type === 'content') {
+                setMessages(prev => prev.map(msg => 
+                  msg.id === summaryMessageId 
+                    ? { ...msg, content: msg.content + data.content }
+                    : msg
+                ));
+              } else if (data.type === 'model') {
+                setMessages(prev => prev.map(msg => 
+                  msg.id === summaryMessageId 
+                    ? { ...msg, model: data.model }
+                    : msg
+                ));
+              } else if (data.type === 'done') {
+                setMessages(prev => prev.map(msg => 
+                  msg.id === summaryMessageId 
+                    ? { ...msg, isStreaming: false }
+                    : msg
+                ));
+              }
+            } catch (parseError) {
+              console.error('Error parsing SSE data:', parseError);
+            }
+          }
+        }
+      }
 
     } catch (error) {
       console.error('Error in edit mode:', error);
@@ -471,6 +495,22 @@ function ChatWindow({ documentId }) {
       handleSubmit(e);
     }
   };
+
+  // Debug utilities
+  useEffect(() => {
+    // Expose debug utilities to window for testing
+    window.debugDiff = {
+      getChanges: () => diffChanges,
+      getAccepted: () => Array.from(acceptedChangeIds),
+      getRejected: () => Array.from(rejectedChangeIds),
+      getOriginalContent: () => originalContent,
+      testApply: (changeIndices) => {
+        const changes = changeIndices.map(i => diffChanges[i]).filter(Boolean);
+        console.log('Testing application of changes:', changes);
+        applyChangesToEditor(changes);
+      }
+    };
+  }, [diffChanges, acceptedChangeIds, rejectedChangeIds, originalContent]);
 
   return (
     <div className="chat-container">
@@ -523,37 +563,153 @@ function ChatWindow({ documentId }) {
       {showDiffView && (
         <div className="diff-overlay" onClick={(e) => {
           if (e.target.className === 'diff-overlay') {
+            // Only restore original content if no changes were accepted
+            if (acceptedChangeIds.size === 0) {
+              window.lexicalEditor.update(() => {
+                const root = $getRoot();
+                root.clear();
+                try {
+                  $convertFromMarkdownString(originalContent, TRANSFORMERS);
+                } catch (error) {
+                  console.warn('Failed to restore original content:', error);
+                }
+              });
+            }
+            // If changes were accepted, keep them in the editor
+            
             setShowDiffView(false);
             setDiffChanges([]);
+            setAcceptedChangeIds(new Set());
+            setRejectedChangeIds(new Set());
           }
         }}>
           <div className="diff-overlay-content">
             <div className="diff-overlay-header">
               <h3>Proposed Changes</h3>
               <button onClick={() => {
+                // Only restore original content if no changes were accepted
+                if (acceptedChangeIds.size === 0) {
+                  window.lexicalEditor.update(() => {
+                    const root = $getRoot();
+                    root.clear();
+                    try {
+                      $convertFromMarkdownString(originalContent, TRANSFORMERS);
+                    } catch (error) {
+                      console.warn('Failed to restore original content:', error);
+                    }
+                  });
+                }
+                // If changes were accepted, keep them in the editor
+                
                 setShowDiffView(false);
                 setDiffChanges([]);
+                setAcceptedChangeIds(new Set());
+                setRejectedChangeIds(new Set());
               }}>Close</button>
             </div>
             <DiffView 
               originalText={originalContent} 
               changes={diffChanges}
-              onAccept={(changeId) => {
-                console.log('Accepted change:', changeId);
+              acceptedChanges={acceptedChangeIds}
+              rejectedChanges={rejectedChangeIds}
+              onAccept={(changeId, change) => {
+                console.log('Accepted change:', changeId, change);
+                
+                // Update accepted changes state
+                const newAccepted = new Set(acceptedChangeIds);
+                newAccepted.add(changeId);
+                setAcceptedChangeIds(newAccepted);
+                
+                // Remove from rejected if it was there
+                const newRejected = new Set(rejectedChangeIds);
+                newRejected.delete(changeId);
+                setRejectedChangeIds(newRejected);
+                
+                // Apply all currently accepted changes
+                const acceptedChanges = diffChanges.filter((_, idx) => 
+                  newAccepted.has(`change-${idx}`)
+                );
+                applyChangesToEditor(acceptedChanges);
               }}
-              onReject={(changeId) => {
-                console.log('Rejected change:', changeId);
+              onReject={(changeId, change) => {
+                console.log('Rejected change:', changeId, change);
+                
+                // Update rejected changes state
+                const newRejected = new Set(rejectedChangeIds);
+                newRejected.add(changeId);
+                setRejectedChangeIds(newRejected);
+                
+                // Remove from accepted if it was there
+                const newAccepted = new Set(acceptedChangeIds);
+                newAccepted.delete(changeId);
+                setAcceptedChangeIds(newAccepted);
+                
+                // Apply only the remaining accepted changes
+                const acceptedChanges = diffChanges.filter((_, idx) => 
+                  newAccepted.has(`change-${idx}`)
+                );
+                
+                if (acceptedChanges.length > 0) {
+                  applyChangesToEditor(acceptedChanges);
+                } else {
+                  // If no changes are accepted, restore original content
+                  window.lexicalEditor.update(() => {
+                    const root = $getRoot();
+                    root.clear();
+                    try {
+                      $convertFromMarkdownString(originalContent, TRANSFORMERS);
+                    } catch (error) {
+                      console.warn('Failed to restore original content:', error);
+                      // Fallback to simple text
+                      if (originalContent && originalContent.trim()) {
+                        const paragraphs = originalContent.split('\n\n');
+                        paragraphs.forEach((paragraph) => {
+                          if (paragraph.trim()) {
+                            const paragraphNode = $createParagraphNode();
+                            const textNode = $createTextNode(paragraph);
+                            paragraphNode.append(textNode);
+                            root.append(paragraphNode);
+                          }
+                        });
+                      }
+                    }
+                  });
+                }
               }}
               onAcceptAll={() => {
-                // Apply all changes to the editor
+                console.log('🔄 Accepting all changes...');
+                // Mark all as accepted
+                const allIds = diffChanges.map((_, idx) => `change-${idx}`);
+                setAcceptedChangeIds(new Set(allIds));
+                setRejectedChangeIds(new Set());
+                
+                // Apply all changes
                 applyChangesToEditor(diffChanges);
                 setShowDiffView(false);
                 setDiffChanges([]);
+                
+                // Clear the state after closing
+                setAcceptedChangeIds(new Set());
+                setRejectedChangeIds(new Set());
               }}
               onRejectAll={() => {
-                // Close without applying any changes
+                // Close without applying any changes - restore original
+                console.log('❌ Rejecting all changes');
                 setShowDiffView(false);
                 setDiffChanges([]);
+                setAcceptedChangeIds(new Set());
+                setRejectedChangeIds(new Set());
+                
+                // Restore original content
+                window.lexicalEditor.update(() => {
+                  const root = $getRoot();
+                  root.clear();
+                  try {
+                    $convertFromMarkdownString(originalContent, TRANSFORMERS);
+                  } catch (error) {
+                    console.warn('Failed to restore original content:', error);
+                  }
+                });
               }}
             />
           </div>
