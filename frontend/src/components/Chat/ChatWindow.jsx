@@ -755,6 +755,8 @@ function ChatWindow({ documentId }) {
                 maxHeight: '120px',
                 height: 'auto',
                 paddingLeft: mode === 'ask' ? '48px' : '16px',
+                overflow: 'hidden',
+                paddingLeft: mode === 'ask' ? '48px' : '16px',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none'
               }}
