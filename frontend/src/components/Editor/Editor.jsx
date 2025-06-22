@@ -108,6 +108,7 @@ function Editor() {
       console.log('Content length:', content?.length || 0);
       console.log('Content preview:', content?.substring(0, 100) || 'No content');
       console.log('Raw content:', JSON.stringify(content));
+      console.log('Number of newlines in content:', (content?.match(/\n/g) || []).length);
       
       // Debug: Test content loading
       if (debugMode) {
@@ -145,11 +146,15 @@ function Editor() {
       console.log('🔄 Loading content into Lexical editor...');
       console.log('Content to load:', content);
       
+      // Normalize content before loading to prevent newline accumulation
+      const normalizedContent = normalizeContent(content);
+      console.log('Normalized content:', normalizedContent);
+      
       window.lexicalEditor.update(() => {
         const root = $getRoot();
         root.clear();
         
-        if (!content || content.trim() === '') {
+        if (!normalizedContent || normalizedContent.trim() === '') {
           console.log('📝 Loading empty content');
           // Create an empty paragraph for empty content
           const paragraph = $createParagraphNode();
@@ -158,24 +163,24 @@ function Editor() {
         }
         
         // Try to detect if content is markdown
-        const isMarkdown = content.includes('# ') || 
-                          content.includes('## ') || 
-                          content.includes('**') || 
-                          content.includes('- ') ||
-                          content.includes('1. ') ||
-                          content.includes('> ');
+        const isMarkdown = normalizedContent.includes('# ') || 
+                          normalizedContent.includes('## ') || 
+                          normalizedContent.includes('**') || 
+                          normalizedContent.includes('- ') ||
+                          normalizedContent.includes('1. ') ||
+                          normalizedContent.includes('> ');
         
         if (isMarkdown) {
           console.log('📝 Loading content as Markdown');
           try {
-            $convertFromMarkdownString(content, TRANSFORMERS);
+            $convertFromMarkdownString(normalizedContent, TRANSFORMERS);
           } catch (markdownError) {
             console.warn('⚠️ Markdown conversion failed, loading as plain text:', markdownError);
-            loadAsPlainText(content, root);
+            loadAsPlainText(normalizedContent, root);
           }
         } else {
           console.log('📝 Loading content as plain text');
-          loadAsPlainText(content, root);
+          loadAsPlainText(normalizedContent, root);
         }
       });
       
@@ -187,17 +192,83 @@ function Editor() {
     }
   };
 
+  const normalizeContent = (content) => {
+    if (!content) return '';
+    
+    // Split content into lines
+    const lines = content.split('\n');
+    const normalizedLines = [];
+    let consecutiveEmptyLines = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine === '') {
+        consecutiveEmptyLines++;
+        // Only allow maximum 2 consecutive empty lines (for paragraph spacing)
+        if (consecutiveEmptyLines <= 2) {
+          normalizedLines.push('');
+        }
+      } else {
+        consecutiveEmptyLines = 0;
+        normalizedLines.push(line);
+      }
+    }
+    
+    // Remove excessive trailing newlines (keep max 1)
+    while (normalizedLines.length > 1 && normalizedLines[normalizedLines.length - 1].trim() === '') {
+      normalizedLines.pop();
+    }
+    
+    return normalizedLines.join('\n');
+  };
+
   const loadAsPlainText = (content, root) => {
     // Split content into lines and create paragraphs
     const lines = content.split('\n');
-    lines.forEach((line, index) => {
-      const paragraph = $createParagraphNode();
-      if (line.trim()) {
-        const textNode = $createTextNode(line);
-        paragraph.append(textNode);
+    
+    // Filter out excessive empty lines and normalize content
+    const processedLines = [];
+    let consecutiveEmptyLines = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine === '') {
+        consecutiveEmptyLines++;
+        // Only allow one consecutive empty line to preserve paragraph breaks
+        if (consecutiveEmptyLines === 1) {
+          processedLines.push('');
+        }
+      } else {
+        consecutiveEmptyLines = 0;
+        processedLines.push(line);
       }
+    }
+    
+    // Remove trailing empty lines
+    while (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() === '') {
+      processedLines.pop();
+    }
+    
+    // Create paragraphs for non-empty lines and single empty lines for spacing
+    if (processedLines.length === 0) {
+      // Create a single empty paragraph for completely empty content
+      const paragraph = $createParagraphNode();
       root.append(paragraph);
-    });
+    } else {
+      processedLines.forEach((line, index) => {
+        const paragraph = $createParagraphNode();
+        if (line.trim()) {
+          const textNode = $createTextNode(line);
+          paragraph.append(textNode);
+        }
+        // Always append the paragraph, even if empty, to maintain structure
+        root.append(paragraph);
+      });
+    }
   };
 
   const saveDocument = async (editorState, title = documentTitle) => {
@@ -218,6 +289,9 @@ function Editor() {
         });
       }
       
+      // Normalize content to prevent newline accumulation
+      markdownContent = normalizeContent(markdownContent);
+      
       // Only save if content has actually changed
       if (markdownContent === lastContent) {
         console.log('No changes detected, skipping save');
@@ -228,6 +302,9 @@ function Editor() {
       console.log('💾 Saving document content via PUT endpoint...');
       console.log('Document ID:', documentId);
       console.log('Content length:', markdownContent.length);
+      console.log('Number of newlines before save:', (markdownContent.match(/\n/g) || []).length);
+      console.log('Previous content length:', lastContent.length);
+      console.log('Previous newlines count:', (lastContent.match(/\n/g) || []).length);
       
       // Save document content to backend using PUT endpoint
       const response = await documentAPI.updateDocumentContent(documentId, markdownContent);
@@ -260,6 +337,9 @@ function Editor() {
     editorState.read(() => {
       markdownContent = $convertToMarkdownString(TRANSFORMERS);
     });
+    
+    // Normalize content to prevent newline accumulation
+    markdownContent = normalizeContent(markdownContent);
 
     if (markdownContent === lastContent) return;
 
