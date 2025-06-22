@@ -17,7 +17,7 @@ LLM_CONFIG = {
         "responder_model": "compound-beta-mini"
     },
     "claude": {
-        "model": "claude-sonnet-4-20250514"
+        "model": "claude-opus-4-20250514"
     },
     "gemini": {
         "model": "gemini-2.5-flash"
@@ -158,7 +158,7 @@ def get_groq_response(message: str, conversation_history: Optional[List[Dict[str
             model=LLM_CONFIG["groq"]["responder_model"],  # Use configured responder model
             messages=messages,
             temperature=0.7,
-            max_tokens=4000,
+            max_tokens=8000,
             stream=stream
         )
         
@@ -214,7 +214,7 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
                     model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
                     system=system_prompt,
                     messages=messages,
-                    max_tokens=4000,
+                    max_tokens=32000,
                     temperature=0.7,
                     tools=[{
                         "type": "web_search_20250305",
@@ -230,7 +230,7 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
                 model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
                 system=system_prompt,
                 messages=messages,
-                max_tokens=4000,
+                max_tokens=32000,
                 temperature=0.7,
                 tools=[{
                     "type": "web_search_20250305",
