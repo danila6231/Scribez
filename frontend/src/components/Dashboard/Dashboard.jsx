@@ -182,10 +182,10 @@ function Dashboard() {
       <header className="dashboard-header">
         <div className="dashboard-nav">
           <div className="nav-left">
-            <div className="logo">
+            <Link to="/" className="logo">
               <img src={quillLogo} alt="Skribez Logo" />
               <span className="logo-text">Skribez</span>
-            </div>
+            </Link>
           </div>
           <div className="nav-center">
             <div className="search-container">
@@ -249,7 +249,7 @@ function Dashboard() {
 
             {filteredDocuments.length === 0 ? (
               <div className="empty-state">
-                <svg width="120" height="120" viewBox="0 0 24 24" fill="#dadce0">
+                <svg width="120" height="120" viewBox="0 0 24 24" fill="black">
                   <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
                 </svg>
                 <h3>No documents found</h3>
