@@ -1,11 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ChatMessage from './ChatMessage';
-import { $convertToMarkdownString } from '@lexical/markdown';
-import { TRANSFORMERS } from '@lexical/markdown';
-
-// Get the API URL from environment variables or use relative path for local development
-const API_URL = import.meta.env.VITE_API_URL || '';
 
 function ChatWindow({ documentId }) {
   const [messages, setMessages] = useState([]);
@@ -63,17 +58,8 @@ function ChatWindow({ documentId }) {
     setMessages(prev => [...prev, streamingMessage]);
 
     try {
-      // Get document content from Lexical editor
-      let documentContent = '';
-      if (window.lexicalEditor) {
-        const editorState = window.lexicalEditor.getEditorState();
-        editorState.read(() => {
-          documentContent = $convertToMarkdownString(TRANSFORMERS);
-        });
-      }
-
-      // Use streaming endpoint with the correct base URL
-      const response = await fetch(`${API_URL}/api/chat/message/stream`, {
+      // Use streaming endpoint
+      const response = await fetch('/api/chat/message/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +68,6 @@ function ChatWindow({ documentId }) {
           message: currentInput,
           conversation_history: messages,
           document_id: documentId,
-          document_content: documentContent
         }),
       });
 

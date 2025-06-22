@@ -5,7 +5,6 @@ import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
 import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
 import { TRANSFORMERS } from '@lexical/markdown';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
@@ -18,7 +17,6 @@ import { editorConfig } from './editorConfig';
 import Toolbar from './Toolbar';
 import { documentAPI } from '../../services/api';
 import { debugDocumentAPI, testContentLoading, verifyDocument } from '../../utils/debugAPI';
-import { API_URL } from '../../config/api';
 
 // Main Editor Component
 function Editor() {
@@ -32,6 +30,7 @@ function Editor() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
   const [lastContent, setLastContent] = React.useState('');
+  const [lastTitle, setLastTitle] = React.useState(''); // Track original title
   const [pendingContent, setPendingContent] = React.useState(null);
   const [editorReady, setEditorReady] = React.useState(false);
   const [debugMode, setDebugMode] = React.useState(process.env.NODE_ENV === 'development');
@@ -117,6 +116,7 @@ function Editor() {
       
       setDocumentTitle(title);
       setLastContent(content || '');
+      setLastTitle(title); // Track the original title
       setHasUnsavedChanges(false);
       
       // If editor is ready, load content immediately, otherwise store as pending
@@ -181,15 +181,6 @@ function Editor() {
       
       console.log('✅ Content loaded successfully into editor');
       
-      // Force a re-render to ensure content is visible
-      setTimeout(() => {
-        if (window.lexicalEditor) {
-          window.lexicalEditor.focus();
-          // Immediately blur to not keep cursor active
-          setTimeout(() => window.lexicalEditor.blur(), 50);
-        }
-      }, 100);
-      
     } catch (err) {
       console.error('❌ Error loading content into editor:', err);
       setError('Failed to load content into editor');
@@ -243,7 +234,10 @@ function Editor() {
       
       setLastSaved(new Date());
       setLastContent(markdownContent);
-      setHasUnsavedChanges(false);
+      
+      // Check if title still has unsaved changes
+      const titleChanged = documentTitle !== lastTitle;
+      setHasUnsavedChanges(titleChanged);
       console.log('✅ Document saved successfully via PUT /api/documents/', documentId);
       console.log('Response:', response);
       
@@ -272,7 +266,7 @@ function Editor() {
     // Use sendBeacon for reliable save on page unload
     const data = JSON.stringify({ content: markdownContent });
     const blob = new Blob([data], { type: 'application/json' });
-    navigator.sendBeacon(`${API_URL}/documents/${documentId}`, blob);
+    navigator.sendBeacon(`https://aiberkeley-hack.onrender.com/api/documents/${documentId}`, blob);
   };
 
   const onChange = (editorState, editor) => {
@@ -291,7 +285,9 @@ function Editor() {
       currentContent = $convertToMarkdownString(TRANSFORMERS);
     });
     
-    const hasChanges = currentContent !== lastContent;
+    const contentChanged = currentContent !== lastContent;
+    const titleChanged = documentTitle !== lastTitle;
+    const hasChanges = contentChanged || titleChanged;
     setHasUnsavedChanges(hasChanges);
     
     // Handle editor changes here if needed
@@ -308,11 +304,11 @@ function Editor() {
       });
     }
     
-    // Auto-save document after changes (debounced) - only if content actually changed
-    if (documentId && hasChanges) {
+    // Auto-save document after changes (debounced) - only save content changes here
+    if (documentId && contentChanged) {
       clearTimeout(window.autoSaveTimeout);
       window.autoSaveTimeout = setTimeout(() => {
-        console.log('⏰ Auto-save triggered after 3 seconds of inactivity');
+        console.log('⏰ Auto-save content triggered after 3 seconds of inactivity');
         saveDocument(editorState);
       }, 3000); // Save after 3 seconds of inactivity
     }
@@ -344,16 +340,49 @@ function Editor() {
   const handleTitleChange = (e) => {
     const newTitle = e.target.value;
     setDocumentTitle(newTitle);
-    setHasUnsavedChanges(true);
     
-    // Auto-save title changes (debounced)
-    clearTimeout(window.titleSaveTimeout);
-    window.titleSaveTimeout = setTimeout(() => {
-      // For now, we only save content. Title updates could be added to the API
-      console.log('Title updated:', newTitle);
-      // Note: Backend doesn't currently have endpoint to update title separately
-      // This could be enhanced by adding a title update endpoint
-    }, 1000);
+    // Check if title actually changed from the original
+    const titleChanged = newTitle !== lastTitle;
+    
+    // Update unsaved changes status
+    const contentChanged = window.lexicalEditor ? (() => {
+      let currentContent = '';
+      window.lexicalEditor.getEditorState().read(() => {
+        currentContent = $convertToMarkdownString(TRANSFORMERS);
+      });
+      return currentContent !== lastContent;
+    })() : false;
+    
+    setHasUnsavedChanges(titleChanged || contentChanged);
+    
+    // Auto-save title changes immediately after typing stops
+    if (titleChanged && documentId) {
+      clearTimeout(window.titleSaveTimeout);
+      window.titleSaveTimeout = setTimeout(async () => {
+        console.log('💾 Auto-saving title...');
+        try {
+          await documentAPI.updateDocumentTitle(documentId, newTitle);
+          setLastTitle(newTitle); // Update the tracked title
+          setLastSaved(new Date());
+          console.log('✅ Title saved successfully');
+          
+          // Re-check unsaved changes after title save
+          const stillContentChanged = window.lexicalEditor ? (() => {
+            let currentContent = '';
+            window.lexicalEditor.getEditorState().read(() => {
+              currentContent = $convertToMarkdownString(TRANSFORMERS);
+            });
+            return currentContent !== lastContent;
+          })() : false;
+          
+          setHasUnsavedChanges(stillContentChanged);
+          
+        } catch (error) {
+          console.error('❌ Failed to save title:', error);
+          setError(`Failed to save title: ${error.message}`);
+        }
+      }, 1000); // Save after 1 second of no typing
+    }
   };
 
   const manualSave = async () => {
@@ -401,22 +430,6 @@ function Editor() {
     }
   };
 
-  // Custom plugin to initialize editor immediately
-  function InitializeEditorPlugin() {
-    const [editor] = useLexicalComposerContext();
-    
-    React.useEffect(() => {
-      // Store editor reference and mark as ready immediately
-      window.lexicalEditor = editor;
-      if (!editorReady) {
-        console.log('🚀 Editor initialized and ready');
-        setEditorReady(true);
-      }
-    }, [editor]);
-    
-    return null;
-  }
-
   return (
     <div className="editor-container">
       <div className="editor-header">
@@ -457,20 +470,9 @@ function Editor() {
                 Error loading/saving
               </span>
             )}
-            {debugMode && (
-              <span className="debug-indicator">DEBUG MODE</span>
-            )}
+
           </div>
           <div className="editor-actions">
-            {debugMode && (
-              <button 
-                onClick={runDebugTest} 
-                className="debug-btn"
-                disabled={isLoading}
-              >
-                Debug
-              </button>
-            )}
             {error && (
               <>
                 <button 
@@ -536,7 +538,6 @@ function Editor() {
           <ListPlugin />
           <LinkPlugin />
           <TabIndentationPlugin />
-          <InitializeEditorPlugin />
         </div>
       </LexicalComposer>
     </div>
