@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import { $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, UNDO_COMMAND, REDO_COMMAND, FORMAT_ELEMENT_COMMAND, $createParagraphNode, $createTextNode } from 'lexical';
 import { $setBlocksType } from '@lexical/selection';
 import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND, $isListNode, $isListItemNode } from '@lexical/list';
@@ -14,6 +15,7 @@ function Toolbar() {
   // This section initializes state variables for the text editor toolbar
   // useLexicalComposerContext() provides access to the Lexical editor instance
   const [editor] = useLexicalComposerContext();
+  const { documentId } = useParams(); // Get current document ID for printing
   // React.useState() creates state variables with their setter functions:
   // - isBold: tracks if selected text is bold (initial: false)
   // - isItalic: tracks if selected text is italic (initial: false) 
@@ -174,6 +176,16 @@ function Toolbar() {
         selection.insertNodes([paragraph]);
       }
     });
+  };
+
+  const openPrintView = () => {
+    if (documentId) {
+      // Open print view in new tab
+      const printUrl = `/print/${documentId}`;
+      window.open(printUrl, '_blank');
+    } else {
+      alert('No document selected for printing');
+    }
   };
 
   return (
@@ -365,6 +377,17 @@ function Toolbar() {
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <path d="M12 8a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 .5.5z"/>
+        </svg>
+      </button>
+      <button
+        className="toolbar-button"
+        onClick={() => openPrintView()}
+        aria-label="Print Document"
+        title="Print Document"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+          <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
         </svg>
       </button>
 

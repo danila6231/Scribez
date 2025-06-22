@@ -1,4 +1,5 @@
 @import './dashboard.css';
+@import './print.css';
 
 * {
   box-sizing: border-box;
