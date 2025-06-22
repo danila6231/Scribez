@@ -535,13 +535,14 @@ body {
   flex: 1;
   position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .web-search-toggle {
   position: absolute;
   left: 8px;
-  bottom: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 32px;
   height: 32px;
   border: none;
@@ -592,6 +593,11 @@ body {
 
 .chat-input:focus {
   border-color: #2196F3;
+}
+
+.chat-input.web-search-enabled::placeholder {
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 .chat-send-button {

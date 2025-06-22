@@ -18,6 +18,7 @@ import Toolbar from './Toolbar';
 import CommandKWidget from './CommandKModal';
 import { documentAPI } from '../../services/api';
 import { debugDocumentAPI, testContentLoading, verifyDocument } from '../../utils/debugAPI';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 
 // Main Editor Component
 function Editor() {
@@ -33,11 +34,11 @@ function Editor() {
   const [lastContent, setLastContent] = React.useState('');
   const [lastTitle, setLastTitle] = React.useState(''); // Track original title
   const [pendingContent, setPendingContent] = React.useState(null);
-  const [editorReady, setEditorReady] = React.useState(false);
   const [debugMode, setDebugMode] = React.useState(process.env.NODE_ENV === 'development');
   const [isCommandKOpen, setIsCommandKOpen] = React.useState(false);
   const [selectedText, setSelectedText] = React.useState('');
   const [commandKPosition, setCommandKPosition] = React.useState({ top: 100, left: 100 });
+  const editorRef = React.useRef(null);
 
   // Handle Cmd+K keyboard shortcut
   React.useEffect(() => {
@@ -86,14 +87,14 @@ function Editor() {
     }
   }, [documentId]);
 
-  // Load pending content when editor becomes ready
+  // Load content when both editor and content are ready
   React.useEffect(() => {
-    if (editorReady && pendingContent !== null && window.lexicalEditor) {
-      console.log('🔄 Loading pending content into editor...');
+    if (pendingContent !== null && (editorRef.current || window.lexicalEditor)) {
+      console.log('🔄 Loading pending content - editor and content both ready!');
       loadContentIntoEditor(pendingContent);
       setPendingContent(null);
     }
-  }, [editorReady, pendingContent]);
+  }, [pendingContent]);
 
   // Save before user leaves the page
   React.useEffect(() => {
@@ -164,13 +165,9 @@ function Editor() {
       setLastTitle(title); // Track the original title
       setHasUnsavedChanges(false);
       
-      // If editor is ready, load content immediately, otherwise store as pending
-      if (editorReady && window.lexicalEditor) {
-        loadContentIntoEditor(content || '');
-      } else {
-        console.log('⏳ Editor not ready, storing content as pending...');
-        setPendingContent(content || '');
-      }
+      // Store content as pending for the EditorRefPlugin to handle
+      console.log('⏳ Storing content as pending for immediate loading...');
+      setPendingContent(content || '');
       
     } catch (err) {
       console.error('❌ Failed to load document:', err);
@@ -181,7 +178,8 @@ function Editor() {
   };
 
   const loadContentIntoEditor = (content) => {
-    if (!window.lexicalEditor) {
+    const editor = window.lexicalEditor || editorRef.current;
+    if (!editor) {
       console.error('❌ Editor not available for content loading');
       return;
     }
@@ -194,7 +192,7 @@ function Editor() {
       const normalizedContent = normalizeContent(content);
       console.log('Normalized content:', normalizedContent);
       
-      window.lexicalEditor.update(() => {
+      editor.update(() => {
         const root = $getRoot();
         root.clear();
         
@@ -394,14 +392,9 @@ function Editor() {
   };
 
   const onChange = (editorState, editor) => {
-    // Store editor reference globally for loading content
+    // Store editor reference globally for loading content  
     window.lexicalEditor = editor;
-    
-    // Mark editor as ready on first change
-    if (!editorReady) {
-      console.log('✅ Editor is now ready');
-      setEditorReady(true);
-    }
+    editorRef.current = editor;
     
     // Check if content has changed
     let currentContent = '';
@@ -554,6 +547,20 @@ function Editor() {
     }
   };
 
+  // Function to handle when editor becomes available
+  const onEditorMount = (editor) => {
+    console.log('🚀 Editor mounted and available!');
+    window.lexicalEditor = editor;
+    editorRef.current = editor;
+    
+    // If we have pending content, load it immediately
+    if (pendingContent !== null) {
+      console.log('🔄 Loading pending content on editor mount...');
+      loadContentIntoEditor(pendingContent);
+      setPendingContent(null);
+    }
+  };
+
   return (
     <div className="editor-container">
       <div className="editor-header">
@@ -578,10 +585,7 @@ function Editor() {
             {isSaving && (
               <span className="saving-indicator">Saving...</span>
             )}
-            {hasUnsavedChanges && !isSaving && (
-              <span className="unsaved-indicator">Unsaved changes</span>
-            )}
-            {lastSaved && !isSaving && !hasUnsavedChanges && (
+            {lastSaved && !isSaving && (
               <span className="last-saved">
                 Last saved: {lastSaved.toLocaleTimeString()}
               </span>
@@ -615,13 +619,6 @@ function Editor() {
                 </button>
               </>
             )}
-            <button 
-              onClick={manualSave} 
-              className="manual-save-btn"
-              disabled={isSaving || isLoading}
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
           </div>
         </div>
       </div>
@@ -642,6 +639,7 @@ function Editor() {
       )}
       
       <LexicalComposer initialConfig={editorConfig}>
+        <EditorRefPlugin onEditorReady={onEditorMount} />
         <Toolbar />
         <div className="editor-content" onBlur={handleEditorBlur}>
           <RichTextPlugin
@@ -663,7 +661,7 @@ function Editor() {
           <LinkPlugin />
           <TabIndentationPlugin />
         </div>
-              </LexicalComposer>
+      </LexicalComposer>
         <CommandKWidget
           isOpen={isCommandKOpen}
           onClose={() => setIsCommandKOpen(false)}
@@ -673,6 +671,22 @@ function Editor() {
         />
       </div>
   );
+}
+
+// Custom plugin to capture editor reference immediately
+function EditorRefPlugin({ onEditorReady }) {
+  const [editor] = useLexicalComposerContext();
+  
+  React.useEffect(() => {
+    if (editor && onEditorReady) {
+      // Small delay to ensure editor is fully initialized
+      setTimeout(() => {
+        onEditorReady(editor);
+      }, 0);
+    }
+  }, [editor, onEditorReady]);
+  
+  return null;
 }
 
 export default Editor; 
