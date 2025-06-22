@@ -227,9 +227,9 @@ function Dashboard() {
                   {isCreating ? (
                     <div className="creating-spinner"></div>
                   ) : (
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="#4285f4">
-                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="#4285f4">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                  </svg>
                   )}
                 </div>
                 <span className="template-name">
