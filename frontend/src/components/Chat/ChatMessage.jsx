@@ -7,8 +7,14 @@ import 'highlight.js/styles/github.css';
 function ChatMessage({ message }) {
   const isUser = message.role === 'user';
   const timestamp = message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : '';
+  
+  // Add edit-specific classes
+  const editClasses = [];
+  if (message.isPlan) editClasses.push('edit-plan');
+  if (message.isSummary) editClasses.push('edit-summary');
+  
   return (
-    <div className={`chat-message ${message.role} ${message.hasError ? 'error' : ''}`}>
+    <div className={`chat-message ${message.role} ${message.hasError ? 'error' : ''} ${editClasses.join(' ')}`}>
       <div className="message-content">
         {!isUser && message.model && (
           <div className={`model-badge ${message.model.toLowerCase()}`}>

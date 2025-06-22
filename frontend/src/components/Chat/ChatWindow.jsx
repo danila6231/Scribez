@@ -303,7 +303,7 @@ function ChatWindow({ documentId }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `Create a short concise plan (2-4 bullet points) for the following edit request: ${trimmedInput}. DO EXACTLY what is asked by the user, nothing else. DO NOT INCLUDE THE REWRITTEN DOCUMENT.`,
+          message: `Create a short concise plan (2-4 bullet points, each bullet point on the new line) for the following edit request: ${trimmedInput}. DO EXACTLY what is asked by the user, nothing else. DO NOT INCLUDE THE REWRITTEN DOCUMENT. JUST THE BULLET POINTS. EACH BULLET ON A NEW LINE`,
           conversation_history: messages,
           document_id: documentId,
           document_content: documentContent
@@ -513,6 +513,13 @@ function ChatWindow({ documentId }) {
         <div ref={messagesEndRef} />
       </div>
 
+      {isLoading && mode === 'edit' && (
+        <div className="edit-spinner-overlay">
+          <div className="edit-spinner"></div>
+          <div className="edit-spinner-text">Processing your edit request...</div>
+        </div>
+      )}
+
       {showDiffView && (
         <div className="diff-overlay" onClick={(e) => {
           if (e.target.className === 'diff-overlay') {
@@ -570,10 +577,10 @@ function ChatWindow({ documentId }) {
             )}
             <textarea
               ref={inputRef}
-              className={`chat-input ${webSearchEnabled && mode === 'ask' ? 'web-search-enabled' : ''}`}
+              className={`chat-input ${webSearchEnabled && mode === 'ask' ? 'web-search-enabled' : ''} ${mode === 'edit' ? 'edit-mode' : ''}`}
               placeholder={mode === 'ask' 
                 ? (webSearchEnabled ? "Ask for help with web search..." : "Ask for writing help...")
-                : "Describe how you want to edit the document..."}
+                : "Edit..."}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}

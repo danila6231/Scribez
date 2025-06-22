@@ -348,6 +348,17 @@ body {
   color: #333;
 }
 
+.chat-message.assistant.edit-plan .message-text {
+  background-color: #e6d9f7; /* Light purple for edit plan messages */
+  color: #333;
+  border-left: 3px solid #9b59b6;
+}
+
+.chat-message.assistant.edit-summary .message-text {
+  background-color: #e6d9f7; /* Light purple for edit summary messages */
+  color: #333;
+}
+
 /* Markdown Styles for Chat Messages */
 .message-text .inline-code {
   background-color: rgba(0, 0, 0, 0.1);
@@ -579,6 +590,14 @@ body {
   border-color: #2196F3;
 }
 
+.chat-input.edit-mode {
+  background-color: #e6d9f7; /* Light purple background */
+}
+
+.chat-input.edit-mode:focus {
+  border-color: #9b59b6; /* Purple border on focus */
+}
+
 .chat-input.web-search-enabled::placeholder {
   font-size: 14px;
   line-height: 1.2;
@@ -620,6 +639,42 @@ body {
   51%, 100% {
     opacity: 0;
   }
+}
+
+/* Edit mode spinner */
+.edit-spinner-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1100;
+  text-align: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.edit-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e6d9f7;
+  border-top: 4px solid #9b59b6;
+  border-radius: 50%;
+  animation: editSpin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.edit-spinner-text {
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+}
+
+@keyframes editSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Placeholder text */
