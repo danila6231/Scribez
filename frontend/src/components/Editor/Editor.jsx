@@ -217,13 +217,68 @@ function Toolbar() {
 }
 
 // Main Editor Component
-function Editor() {
+function Editor({ documentId }) {
+  const [documentTitle, setDocumentTitle] = React.useState('Untitled Document');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [lastSaved, setLastSaved] = React.useState(null);
+
+  // Load document when documentId changes
+  React.useEffect(() => {
+    if (documentId) {
+      loadDocument(documentId);
+    }
+  }, [documentId]);
+
+  const loadDocument = async (id) => {
+    setIsLoading(true);
+    try {
+      // Mock document loading - replace with actual API call
+      const mockDocument = {
+        id: id,
+        title: id === '1' ? 'My First Document' : 
+               id === '2' ? 'Meeting Notes - Jan 2024' :
+               id === '3' ? 'Project Proposal' : 'Untitled Document',
+        content: id === '1' ? 'This is the beginning of my first document. It contains some sample text to demonstrate the editor functionality.' :
+                 id === '2' ? 'Team meeting notes from our planning session. We discussed project timelines and resource allocation.' :
+                 id === '3' ? 'Executive summary for the new project initiative. This proposal outlines the key objectives and expected outcomes.' : '',
+        lastModified: new Date()
+      };
+      
+      setDocumentTitle(mockDocument.title);
+      // Set editor content here when we have the document data
+      
+    } catch (error) {
+      console.error('Failed to load document:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveDocument = async (content) => {
+    try {
+      // Mock document saving - replace with actual API call
+      console.log('Saving document:', { documentId, title: documentTitle, content });
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Failed to save document:', error);
+    }
+  };
+
   const onChange = (editorState, editor) => {
     // Handle editor changes here if needed
     if (process.env.NODE_ENV === 'development') {
       editorState.read(() => {
         const root = $getRoot();
-        console.log('Editor state:', root.getTextContent());
+        const content = root.getTextContent();
+        console.log('Editor state:', content);
+        
+        // Auto-save document after changes (debounced)
+        if (documentId && content.trim()) {
+          clearTimeout(window.autoSaveTimeout);
+          window.autoSaveTimeout = setTimeout(() => {
+            saveDocument(content);
+          }, 2000); // Save after 2 seconds of inactivity
+        }
       });
     }
     
@@ -254,7 +309,23 @@ function Editor() {
   return (
     <div className="editor-container">
       <div className="editor-header">
-        <h2>Document Editor</h2>
+        <div className="editor-title-section">
+          <input
+            type="text"
+            value={documentTitle}
+            onChange={(e) => setDocumentTitle(e.target.value)}
+            className="document-title-input"
+            placeholder="Untitled Document"
+          />
+          {lastSaved && (
+            <span className="last-saved">
+              Last saved: {lastSaved.toLocaleTimeString()}
+            </span>
+          )}
+          {isLoading && (
+            <span className="loading-indicator">Loading...</span>
+          )}
+        </div>
       </div>
       <LexicalComposer initialConfig={editorConfig}>
         <Toolbar />
