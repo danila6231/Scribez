@@ -1,5 +1,6 @@
 // Get the API base URL from environment variable or use default
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+console.log(API_BASE_URL);
 
 // Export the base URL and full API URL
 export const BASE_URL = API_BASE_URL;
