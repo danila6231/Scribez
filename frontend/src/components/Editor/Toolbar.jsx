@@ -6,6 +6,7 @@ import { $createHeadingNode, $createQuoteNode } from '@lexical/rich-text';
 import { $createCodeNode } from '@lexical/code';
 import { $createLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { ImageInsertButton } from './ImagePlugin';
 import linkIcon from '../../assets/icons/icons8-link-50.png';
 import quoteIcon from '../../assets/icons/quote.png';
 import italicIcon from '../../assets/icons/italic.png';
@@ -367,6 +368,8 @@ function Toolbar() {
           <path d="M12 8a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 .5.5z"/>
         </svg>
       </button>
+
+      <ImageInsertButton editor={editor} />
 
       <div className="toolbar-divider" />
 

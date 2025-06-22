@@ -4,6 +4,7 @@ import { ListItemNode, ListNode } from '@lexical/list';
 import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { TextNode } from 'lexical';
+import { ImageNode } from './ImageNode';
 
 // Custom Highlight Node
 export class HighlightNode extends TextNode {
@@ -180,6 +181,7 @@ export const editorConfig = {
     AutoLinkNode,
     LinkNode,
     HighlightNode,
+    ImageNode,
   ],
 };
 

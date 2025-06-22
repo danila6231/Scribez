@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { $getRoot, $createParagraphNode, $createTextNode, $getSelection } from 'lexical';
 import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
 import { TRANSFORMERS } from '@lexical/markdown';
+import { IMAGE_TRANSFORMER } from './ImageNode';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -12,6 +13,7 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
+import ImagePlugin from './ImagePlugin';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { editorConfig } from './editorConfig';
 import Toolbar from './Toolbar';
@@ -19,6 +21,9 @@ import CommandKWidget from './CommandKModal';
 import { documentAPI } from '../../services/api';
 import { debugDocumentAPI, testContentLoading, verifyDocument } from '../../utils/debugAPI';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+
+// Custom transformers array that includes image support
+const CUSTOM_TRANSFORMERS = [...TRANSFORMERS, IMAGE_TRANSFORMER];
 
 // Main Editor Component
 function Editor() {
@@ -113,8 +118,7 @@ function Editor() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden' && hasUnsavedChanges && window.lexicalEditor) {
         // Save when tab becomes hidden
-        const editorState = window.lexicalEditor.getEditorState();
-        saveDocument(editorState);
+        saveDocument();
       }
     };
 
@@ -188,6 +192,14 @@ function Editor() {
       console.log('🔄 Loading content into Lexical editor...');
       console.log('Content to load:', content);
       
+      // Debug: Check for images in loaded content
+      const imageMatches = content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g);
+      if (imageMatches) {
+        console.log('🖼️ Found images in loaded content:', imageMatches);
+      } else {
+        console.log('🖼️ No images found in loaded content');
+      }
+      
       // Normalize content before loading to prevent newline accumulation
       const normalizedContent = normalizeContent(content);
       console.log('Normalized content:', normalizedContent);
@@ -210,12 +222,13 @@ function Editor() {
                           normalizedContent.includes('**') || 
                           normalizedContent.includes('- ') ||
                           normalizedContent.includes('1. ') ||
-                          normalizedContent.includes('> ');
+                          normalizedContent.includes('> ') ||
+                          normalizedContent.includes('![');
         
         if (isMarkdown) {
           console.log('📝 Loading content as Markdown');
           try {
-            $convertFromMarkdownString(normalizedContent, TRANSFORMERS);
+            $convertFromMarkdownString(normalizedContent, CUSTOM_TRANSFORMERS);
           } catch (markdownError) {
             console.warn('⚠️ Markdown conversion failed, loading as plain text:', markdownError);
             loadAsPlainText(normalizedContent, root);
@@ -313,9 +326,15 @@ function Editor() {
     }
   };
 
-  const saveDocument = async (editorState, title = documentTitle) => {
+  const saveDocument = async (title = documentTitle) => {
     if (!documentId) {
       console.error('No document ID provided for saving');
+      return false;
+    }
+
+    const editor = window.lexicalEditor || editorRef.current;
+    if (!editor) {
+      console.error('Editor not available for saving.');
       return false;
     }
 
@@ -325,11 +344,37 @@ function Editor() {
       
       // Convert editor state to markdown
       let markdownContent = '';
-      if (editorState) {
-        editorState.read(() => {
-          markdownContent = $convertToMarkdownString(TRANSFORMERS);
+      const editorState = editor.getEditorState();
+      editorState.read(() => {
+          // Debug: Log all nodes in the editor
+          const root = $getRoot();
+          const allNodes = root.getAllTextNodes();
+          const allChildren = root.getChildren();
+          console.log('🔍 All nodes in editor:', allChildren.map(child => ({ type: child.getType(), text: child.getTextContent() })));
+          console.log('🔍 Looking for ImageNodes...');
+          
+          // Find ImageNodes specifically
+          const findImageNodes = (node) => {
+            const imageNodes = [];
+            if (node.getType && node.getType() === 'image') {
+              imageNodes.push(node);
+              console.log('🖼️ Found ImageNode:', node);
+            }
+            if (node.getChildren) {
+              const children = node.getChildren();
+              children.forEach(child => {
+                imageNodes.push(...findImageNodes(child));
+              });
+            }
+            return imageNodes;
+          };
+          
+          const imageNodes = findImageNodes(root);
+          console.log('🖼️ Total ImageNodes found:', imageNodes.length);
+          
+          console.log('🔄 Converting to markdown with transformers:', CUSTOM_TRANSFORMERS.length);
+          markdownContent = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
         });
-      }
       
       // Normalize content to prevent newline accumulation
       markdownContent = normalizeContent(markdownContent);
@@ -347,6 +392,16 @@ function Editor() {
       console.log('Number of newlines before save:', (markdownContent.match(/\n/g) || []).length);
       console.log('Previous content length:', lastContent.length);
       console.log('Previous newlines count:', (lastContent.match(/\n/g) || []).length);
+      
+      // Debug: Check for images in the content
+      console.log('🖼️ Image debug - Full markdown content:');
+      console.log(markdownContent);
+      const imageMatches = markdownContent.match(/!\[([^\]]*)\]\(([^)]+)\)/g);
+      if (imageMatches) {
+        console.log('🖼️ Found images in markdown:', imageMatches);
+      } else {
+        console.log('🖼️ No images found in markdown content');
+      }
       
       // Save document content to backend using PUT endpoint
       const response = await documentAPI.updateDocumentContent(documentId, markdownContent);
@@ -377,7 +432,7 @@ function Editor() {
 
     let markdownContent = '';
     editorState.read(() => {
-      markdownContent = $convertToMarkdownString(TRANSFORMERS);
+      markdownContent = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
     });
     
     // Normalize content to prevent newline accumulation
@@ -399,7 +454,7 @@ function Editor() {
     // Check if content has changed
     let currentContent = '';
     editorState.read(() => {
-      currentContent = $convertToMarkdownString(TRANSFORMERS);
+      currentContent = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
     });
     
     const contentChanged = currentContent !== lastContent;
@@ -414,7 +469,7 @@ function Editor() {
         const textContent = root.getTextContent();
         
         // Convert to markdown and log it
-        const markdown = $convertToMarkdownString(TRANSFORMERS);
+        const markdown = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
         console.log('🔄 Live Markdown Preview:', markdown);
         console.log('📝 Plain Text:', textContent);
         console.log('🔄 Content changed:', hasChanges);
@@ -426,7 +481,7 @@ function Editor() {
       clearTimeout(window.autoSaveTimeout);
       window.autoSaveTimeout = setTimeout(() => {
         console.log('⏰ Auto-save content triggered after 3 seconds of inactivity');
-        saveDocument(editorState);
+        saveDocument();
       }, 3000); // Save after 3 seconds of inactivity
     }
     
@@ -465,7 +520,7 @@ function Editor() {
     const contentChanged = window.lexicalEditor ? (() => {
       let currentContent = '';
       window.lexicalEditor.getEditorState().read(() => {
-        currentContent = $convertToMarkdownString(TRANSFORMERS);
+        currentContent = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
       });
       return currentContent !== lastContent;
     })() : false;
@@ -487,7 +542,7 @@ function Editor() {
           const stillContentChanged = window.lexicalEditor ? (() => {
             let currentContent = '';
             window.lexicalEditor.getEditorState().read(() => {
-              currentContent = $convertToMarkdownString(TRANSFORMERS);
+              currentContent = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
             });
             return currentContent !== lastContent;
           })() : false;
@@ -503,24 +558,22 @@ function Editor() {
   };
 
   const manualSave = async () => {
-    if (window.lexicalEditor && documentId) {
-      console.log('🖱️ Manual save triggered');
-      const editorState = window.lexicalEditor.getEditorState();
-      const success = await saveDocument(editorState);
-      
+    if (window.lexicalEditor) {
+      const success = await saveDocument();
       if (success) {
-        // Show brief success feedback
-        console.log('✅ Manual save completed successfully');
+        console.log('✅ Manual save successful');
+        setHasUnsavedChanges(false);
+      } else {
+        console.error('❌ Manual save failed');
       }
     }
   };
 
-  // Save when editor loses focus
   const handleEditorBlur = () => {
-    if (hasUnsavedChanges && window.lexicalEditor && documentId) {
-      console.log('👁️ Editor lost focus, auto-saving...');
-      const editorState = window.lexicalEditor.getEditorState();
-      saveDocument(editorState);
+    // Save on blur if there are unsaved changes
+    if (hasUnsavedChanges) {
+      console.log('📝 Editor blurred with unsaved changes, saving...');
+      manualSave();
     }
   };
 
@@ -657,9 +710,10 @@ function Editor() {
           />
           <OnChangePlugin onChange={onChange} />
           <HistoryPlugin />
-          <ListPlugin />
-          <LinkPlugin />
-          <TabIndentationPlugin />
+                      <ListPlugin />
+            <LinkPlugin />
+            <TabIndentationPlugin />
+            <ImagePlugin />
         </div>
       </LexicalComposer>
         <CommandKWidget
