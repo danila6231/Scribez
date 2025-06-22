@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import Editor from './Editor/Editor';
 import ChatWindow from './Chat/ChatWindow';
 
 function Layout() {
+  const { documentId } = useParams();
   const [chatWidth, setChatWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
   const layoutRef = useRef(null);
@@ -50,14 +52,14 @@ function Layout() {
   return (
     <div className="layout-container" ref={layoutRef}>
       <div className="editor-section" style={{ flex: 1 }}>
-        <Editor />
+        <Editor documentId={documentId} />
       </div>
       <div 
         className={`resize-handle ${isDragging ? 'dragging' : ''}`}
         onMouseDown={handleMouseDown}
       />
       <div className="chat-section" style={{ width: `${chatWidth}px` }}>
-        <ChatWindow />
+        <ChatWindow documentId={documentId} />
       </div>
     </div>
   );
