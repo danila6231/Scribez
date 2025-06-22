@@ -14,7 +14,7 @@ load_dotenv()
 LLM_CONFIG = {
     "groq": {
         "analyzer_model": "llama3-8b-8192",
-        "responder_model": "llama3-70b-8192"
+        "responder_model": "compound-beta-mini"
     },
     "claude": {
         "model": "claude-sonnet-4-20250514"
