@@ -54,6 +54,26 @@ export function DiffPlugin({ originalText, newText, changes }) {
           textNode.setStyle('color: #008000; border-top: 2px solid #008000; border-bottom: 2px solid #008000; padding: 2px 0;');
           paragraph.append(textNode);
           root.append(paragraph);
+        } else if (change.type === 'replace') {
+          // Create both deleted and inserted text for replacements
+          const paragraph = $createParagraphNode();
+          
+          // Add deleted text
+          const deletedNode = $createTextNode(change.old_text);
+          deletedNode.setFormat('strikethrough');
+          deletedNode.setStyle('color: #0066cc; text-decoration-color: #0066cc;');
+          paragraph.append(deletedNode);
+          
+          // Add space between old and new text
+          paragraph.append($createTextNode(' '));
+          
+          // Add inserted text
+          const insertedNode = $createTextNode(change.new_text);
+          insertedNode.setStyle('color: #008000; border-top: 2px solid #008000; border-bottom: 2px solid #008000; padding: 2px 0;');
+          paragraph.append(insertedNode);
+          
+          root.append(paragraph);
+          lastPos = change.end_pos;
         }
       });
 

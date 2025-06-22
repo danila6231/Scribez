@@ -8,6 +8,7 @@ class ChangeType(Enum):
     """Types of changes in a diff"""
     INSERT = "insert"
     DELETE = "delete"
+    REPLACE = "replace"
 
 class Change:
     """Represents a single change in the document"""
@@ -115,30 +116,20 @@ def compute_exact_diff(old_content: str, new_content: str, granularity: str = "w
                     ))
                     
             elif tag == 'replace':
-                # Words replaced - break into separate delete and insert operations
+                # Words replaced - create a single replace operation
                 old_start = old_tokens[i1]['start']
                 old_end = old_tokens[i2-1]['end'] if i2 > i1 else old_start
                 old_text = old_content[old_start:old_end]
                 
-                # Add delete operation
-                changes.append(Change(
-                    change_type=ChangeType.DELETE,
-                    start_pos=old_start,
-                    end_pos=old_end,
-                    old_text=old_text,
-                    line_number=_get_line_number(old_content, old_start),
-                    word_index=i1
-                ))
-                
-                # Add insert operation at the same position
                 new_start = new_tokens[j1]['start']
                 new_end = new_tokens[j2-1]['end'] if j2 > j1 else new_start
                 new_text = new_content[new_start:new_end]
                 
                 changes.append(Change(
-                    change_type=ChangeType.INSERT,
-                    start_pos=old_start,  # Insert at the same position as delete
-                    end_pos=old_start,
+                    change_type=ChangeType.REPLACE,
+                    start_pos=old_start,
+                    end_pos=old_end,
+                    old_text=old_text,
                     new_text=new_text,
                     line_number=_get_line_number(old_content, old_start),
                     word_index=i1
@@ -170,18 +161,11 @@ def compute_exact_diff(old_content: str, new_content: str, granularity: str = "w
                 ))
                 
             elif tag == 'replace':
-                # Break replace into separate delete and insert operations
                 changes.append(Change(
-                    change_type=ChangeType.DELETE,
+                    change_type=ChangeType.REPLACE,
                     start_pos=i1,
                     end_pos=i2,
                     old_text=old_content[i1:i2],
-                    line_number=_get_line_number(old_content, i1)
-                ))
-                changes.append(Change(
-                    change_type=ChangeType.INSERT,
-                    start_pos=i1,
-                    end_pos=i1,
                     new_text=new_content[j1:j2],
                     line_number=_get_line_number(old_content, i1)
                 ))
@@ -348,20 +332,12 @@ def _get_inline_changes(old_line: str, new_line: str, line_start_pos: int, line_
                 start = line_start_pos + old_tokens[i1]['start']
                 end = line_start_pos + (old_tokens[i2-1]['end'] if i2 > i1 else old_tokens[i1]['end'])
                 
-                # Add delete operation
+                # Create a single replace operation
                 changes.append({
-                    "type": "delete",
+                    "type": "replace",
                     "start_pos": start,
                     "end_pos": end,
                     "old_text": old_line[old_tokens[i1]['start']:old_tokens[i2-1]['end'] if i2 > i1 else old_tokens[i1]['end']],
-                    "line_number": line_number
-                })
-                
-                # Add insert operation
-                changes.append({
-                    "type": "insert",
-                    "start_pos": start,
-                    "end_pos": start,
                     "new_text": new_line[new_tokens[j1]['start']:new_tokens[j2-1]['end'] if j2 > j1 else new_tokens[j1]['end']],
                     "line_number": line_number
                 })
