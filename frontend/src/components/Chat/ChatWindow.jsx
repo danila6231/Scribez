@@ -234,8 +234,8 @@ function ChatWindow({ documentId }) {
             </button>
             <textarea
               ref={inputRef}
-              className="chat-input"
-              placeholder={webSearchEnabled ? "Ask for writing help with web search..." : "Ask for writing help..."}
+              className={`chat-input ${webSearchEnabled ? 'web-search-enabled' : ''}`}
+              placeholder={webSearchEnabled ? "Ask for help with web search..." : "Ask for writing help..."}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
