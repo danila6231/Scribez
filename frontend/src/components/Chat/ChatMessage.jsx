@@ -4,18 +4,16 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import 'highlight.js/styles/github.css';
-
 function ChatMessage({ message }) {
   const isUser = message.role === 'user';
   const timestamp = message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : '';
-
   return (
     <div className={`chat-message ${message.role} ${message.hasError ? 'error' : ''}`}>
       <div className="message-content">
         {!isUser && message.model && (
           <div className={`model-badge ${message.model.toLowerCase()}`}>
             <span className="model-icon">
-              {message.isStreaming ? '⏳' : '🤖'}
+              {message.isStreaming ? '⌛' : '🤖'}
             </span>
             <span className="model-name">{message.model}</span>
             {message.isStreaming && <span className="streaming-indicator">typing...</span>}
@@ -80,5 +78,4 @@ function ChatMessage({ message }) {
     </div>
   );
 }
-
-export default ChatMessage; 
+export default ChatMessage;

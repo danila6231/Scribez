@@ -38,21 +38,30 @@ function ChatWindow({ documentId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const trimmedInput = inputValue.trim();
+    if (!trimmedInput || isLoading) return;
     
-    if (!inputValue.trim() || isLoading) return;
-
+    // Create user message with clean content
     const userMessage = {
-      content: inputValue,
+      content: trimmedInput,
       role: 'user',
       timestamp: new Date().toISOString(),
       webSearchEnabled: webSearchEnabled,
     };
+    
+    // Prepare message for API (add web search instruction only for backend)
+    const apiMessage = webSearchEnabled ? trimmedInput + " and do a web search" : trimmedInput;
 
     // Add user message to chat
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputValue;
     setInputValue('');
     setIsLoading(true);
+
+    // Reset textarea height to original size
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = '40px'; // Reset to minHeight
+    }
 
     // Create placeholder for streaming AI response
     const streamingMessageId = Date.now();
@@ -87,7 +96,7 @@ function ChatWindow({ documentId }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: currentInput,
+          message: apiMessage,
           conversation_history: messages,
           document_id: documentId,
           document_content: documentContent

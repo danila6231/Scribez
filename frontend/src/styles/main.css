@@ -240,7 +240,7 @@ body {
 }
 
 .chat-message.user {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .chat-message.assistant {
@@ -263,7 +263,7 @@ body {
 }
 
 .chat-message.user .message-content {
-  text-align: right;
+  text-align: left;
 }
 
 .chat-message.assistant .message-content {
