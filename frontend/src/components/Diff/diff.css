@@ -1,0 +1,64 @@
+.diff-view {
+  font-family: inherit;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Deleted text - blue strikethrough */
+.diff-deleted {
+  color: #0066cc;
+  text-decoration: line-through;
+  text-decoration-color: #0066cc;
+  text-decoration-thickness: 2px;
+  opacity: 0.8;
+  animation: fadeStrike 0.3s ease-in-out;
+}
+
+/* Inserted text - with top and bottom bars */
+.diff-inserted {
+  position: relative;
+  display: inline-block;
+  color: #008000;
+  padding: 2px 0;
+  margin: 0 2px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.diff-inserted::before,
+.diff-inserted::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #008000;
+}
+
+.diff-inserted::before {
+  top: 0;
+}
+
+.diff-inserted::after {
+  bottom: 0;
+}
+
+@keyframes fadeStrike {
+  from {
+    opacity: 0;
+    text-decoration-color: transparent;
+  }
+  to {
+    opacity: 0.8;
+    text-decoration-color: #0066cc;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+} 

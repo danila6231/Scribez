@@ -1,0 +1,191 @@
+.diff-tester {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.diff-tester h1 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.instructions {
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.example-deleted {
+  color: #0066cc;
+  text-decoration: line-through;
+  text-decoration-color: #0066cc;
+  text-decoration-thickness: 2px;
+}
+
+.example-inserted {
+  position: relative;
+  display: inline-block;
+  color: #008000;
+  padding: 2px 4px;
+  margin: 0 2px;
+}
+
+.example-inserted::before,
+.example-inserted::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #008000;
+}
+
+.example-inserted::before {
+  top: 0;
+}
+
+.example-inserted::after {
+  bottom: 0;
+}
+
+.input-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.text-input-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-input-container label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.text-input-container textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.3s;
+}
+
+.text-input-container textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.granularity-selector label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.granularity-selector select {
+  padding: 0.5rem;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.compute-button {
+  padding: 0.75rem 2rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.compute-button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.compute-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.result-section {
+  margin-bottom: 2rem;
+}
+
+.result-section h2 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.diff-result {
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-height: 100px;
+}
+
+.debug-section {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.debug-section h3 {
+  color: #666;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+}
+
+.debug-info {
+  background-color: #fff;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 12px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .input-section {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .compute-button {
+    width: 100%;
+  }
+} 

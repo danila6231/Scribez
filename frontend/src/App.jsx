@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard/Dashboard';
+import DiffTester from './components/Diff/DiffTester';
 import { Routes, Route, Link } from 'react-router-dom';
 import LandingPage from './components/Landing/LandingPage';
 import { 
@@ -33,6 +34,7 @@ function App() {
       <Route path="/editor" element={<ProtectedEditor />} />
       <Route path="/editor/:documentId" element={<ProtectedEditor />} />
       <Route path="/dashboard" element={<ProtectedDashboard />} />
+      <Route path="/diff-tester" element={<DiffTester />} />
     </Routes>
   );
 }
