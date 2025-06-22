@@ -949,12 +949,12 @@ body {
 }
 
 .nav-button.primary {
-  background: #1a73e8;
+  background: #8B5CF6;
   color: white;
 }
 
 .nav-button.primary:hover {
-  background: #1557b0;
+  background: #7C3AED;
 }
 
 /* Hero Section */
@@ -1021,7 +1021,7 @@ body {
 
 .cta-button.primary {
   background: #fff;
-  color: #1a73e8;
+  color: #8B5CF6;
 }
 
 .cta-button.primary:hover {
