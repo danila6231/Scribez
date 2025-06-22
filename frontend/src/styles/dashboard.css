@@ -383,4 +383,532 @@
     width: 60px;
     height: 80px;
   }
+}
+
+/* Loading and Error States */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e8eaed;
+  border-top: 4px solid #4285f4;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.creating-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e8eaed;
+  border-top: 3px solid #4285f4;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.mini-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e8eaed;
+  border-top: 2px solid #5f6368;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  background-color: #fef7f0;
+  border: 1px solid #f9ab00;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message p {
+  margin: 0;
+  color: #d93025;
+  font-size: 14px;
+}
+
+.error-message button {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+.error-message button:hover {
+  text-decoration: underline;
+}
+
+/* Template Card States */
+.template-card.creating {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.template-card[disabled="true"] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Document Item Wrapper and Actions */
+.document-item-wrapper {
+  position: relative;
+}
+
+.actions-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 8px;
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 120px;
+  padding: 8px 0;
+}
+
+.dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+.action-option {
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.action-option:hover {
+  background-color: #f1f3f4;
+}
+
+.action-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-option {
+  color: #d93025;
+}
+
+.delete-option:hover {
+  background-color: #fce8e6;
+}
+
+/* Editor Status Indicators */
+.editor-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 14px;
+}
+
+.saving-indicator {
+  color: #1a73e8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.saving-indicator::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e8eaed;
+  border-top: 2px solid #1a73e8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.last-saved {
+  color: #5f6368;
+}
+
+.loading-indicator {
+  color: #1a73e8;
+}
+
+.error-indicator {
+  color: #d93025;
+  cursor: help;
+}
+
+.manual-save-btn {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manual-save-btn:hover:not(:disabled) {
+  background: #1557b0;
+}
+
+.manual-save-btn:disabled {
+  background: #dadce0;
+  cursor: not-allowed;
+}
+
+.error-banner {
+  background-color: #fef7f0;
+  border: 1px solid #f9ab00;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-banner p {
+  margin: 0;
+  color: #d93025;
+  font-size: 14px;
+}
+
+.error-banner button {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+.error-banner button:hover {
+  text-decoration: underline;
+}
+
+/* Editor Header Layout */
+.editor-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.document-title-input {
+  flex: 1;
+  max-width: 300px;
+}
+
+/* Additional Editor Status Indicators */
+.unsaved-indicator {
+  color: #ea4335;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.unsaved-indicator::before {
+  content: '●';
+  font-size: 12px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Editor Actions Layout */
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retry-save-btn {
+  background: #ea4335;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retry-save-btn:hover:not(:disabled) {
+  background: #d33b2c;
+}
+
+.retry-save-btn:disabled {
+  background: #dadce0;
+  cursor: not-allowed;
+}
+
+/* Enhanced Error Banner */
+.error-banner {
+  background-color: #fef7f0;
+  border: 1px solid #f9ab00;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-banner p {
+  margin: 0;
+  color: #d93025;
+  font-size: 14px;
+  flex: 1;
+}
+
+.error-banner div {
+  display: flex;
+  gap: 8px;
+}
+
+.error-banner button {
+  background: none;
+  border: 1px solid;
+  color: #1a73e8;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.error-banner button:first-child {
+  background: #1a73e8;
+  color: white;
+  border-color: #1a73e8;
+}
+
+.error-banner button:first-child:hover:not(:disabled) {
+  background: #1557b0;
+  border-color: #1557b0;
+}
+
+.error-banner button:last-child:hover {
+  background: #f8f9fa;
+  border-color: #1a73e8;
+}
+
+.error-banner button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Save Status Improvements */
+.saving-indicator {
+  color: #1a73e8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.saving-indicator::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e8eaed;
+  border-top: 2px solid #1a73e8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.last-saved {
+  color: #5f6368;
+  font-size: 13px;
+}
+
+.loading-indicator {
+  color: #1a73e8;
+  font-weight: 500;
+}
+
+.error-indicator {
+  color: #d93025;
+  cursor: help;
+  font-weight: 500;
+}
+
+/* Editor Container Enhancements */
+.editor-content {
+  position: relative;
+}
+
+.editor-content:focus-within .ContentEditable__root {
+  outline: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .editor-title-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .editor-status {
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .editor-actions {
+    justify-content: flex-end;
+  }
+
+  .manual-save-btn, .retry-save-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Add these debug styles to the existing dashboard.css file */
+
+/* Debug Mode Indicators */
+.debug-indicator {
+  color: #9c27b0;
+  font-weight: 500;
+  font-size: 12px;
+  background: #f3e5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #ce93d8;
+}
+
+.debug-btn {
+  background: #9c27b0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.debug-btn:hover:not(:disabled) {
+  background: #7b1fa2;
+}
+
+.debug-btn:disabled {
+  background: #dadce0;
+  cursor: not-allowed;
+}
+
+/* Enhanced Error Indicator */
+.error-indicator {
+  color: #d93025;
+  cursor: help;
+  font-weight: 500;
+  position: relative;
+}
+
+.error-indicator:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 4px;
+}
+
+/* Loading State Improvements */
+.loading-indicator {
+  color: #1a73e8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.loading-indicator::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e8eaed;
+  border-top: 2px solid #1a73e8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Status Section Layout Improvements */
+.editor-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Responsive Debug Mode */
+@media (max-width: 768px) {
+  .debug-indicator {
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+  
+  .debug-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .editor-status {
+    font-size: 12px;
+    gap: 8px;
+  }
+  
+  .editor-actions {
+    gap: 6px;
+  }
 } 

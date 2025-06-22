@@ -284,4 +284,37 @@
   height: auto;
   margin: 15px 0;
   display: block;
+}
+
+/* Home Button Styles */
+.home-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 8px;
+  margin-right: 12px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
+  min-width: 36px;
+  height: 36px;
+}
+
+.home-button:hover {
+  background-color: #f5f5f5;
+  border-color: #d0d0d0;
+  color: #333;
+}
+
+.home-button:active {
+  background-color: #e8e8e8;
+}
+
+.editor-title-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 } 
