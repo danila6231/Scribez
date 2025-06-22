@@ -328,6 +328,25 @@ function Toolbar() {
           <path d="M12 8a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 .5.5z"/>
         </svg>
       </button>
+
+      <div className="toolbar-divider" />
+
+      <button 
+        className="toolbar-button command-k-button"
+        title="AI Assistant (⌘K)"
+        onClick={() => {
+          // Dispatch custom event to open Command+K modal
+          const event = new KeyboardEvent('keydown', {
+            key: 'k',
+            metaKey: true,
+            ctrlKey: true,
+            bubbles: true
+          });
+          document.dispatchEvent(event);
+        }}
+      >
+        <span style={{ fontSize: '14px', fontWeight: 'bold' }}>⌘K</span>
+      </button>
     </div>
   );
 }

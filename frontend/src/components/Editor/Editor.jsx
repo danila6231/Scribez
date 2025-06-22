@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
+import { $getRoot, $createParagraphNode, $createTextNode, $getSelection } from 'lexical';
 import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
 import { TRANSFORMERS } from '@lexical/markdown';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
@@ -16,6 +16,7 @@ import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { editorConfig } from './editorConfig';
 import Toolbar from './Toolbar';
+import CommandKWidget from './CommandKModal';
 import { documentAPI } from '../../services/api';
 import { debugDocumentAPI, testContentLoading, verifyDocument } from '../../utils/debugAPI';
 import { API_URL } from '../../config/api';
@@ -35,6 +36,47 @@ function Editor() {
   const [pendingContent, setPendingContent] = React.useState(null);
   const [editorReady, setEditorReady] = React.useState(false);
   const [debugMode, setDebugMode] = React.useState(process.env.NODE_ENV === 'development');
+  const [isCommandKOpen, setIsCommandKOpen] = React.useState(false);
+  const [selectedText, setSelectedText] = React.useState('');
+  const [commandKPosition, setCommandKPosition] = React.useState({ top: 100, left: 100 });
+
+  // Handle Cmd+K keyboard shortcut
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        
+        // Get selected text and cursor position from the editor if available
+        if (window.lexicalEditor) {
+          window.lexicalEditor.getEditorState().read(() => {
+            const selection = $getSelection();
+            if (selection && !selection.isCollapsed()) {
+              const text = selection.getTextContent();
+              setSelectedText(text);
+            } else {
+              setSelectedText('');
+            }
+          });
+        }
+        
+        // Position the widget near the center of the editor
+        const editorElement = document.querySelector('.ContentEditable__root');
+        if (editorElement) {
+          const rect = editorElement.getBoundingClientRect();
+          setCommandKPosition({
+            top: rect.top + 100,
+            left: rect.left + rect.width / 2 - 160, // Center horizontally (-160 = half widget width)
+          });
+        }
+        
+        setIsCommandKOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Load document when documentId changes
   React.useEffect(() => {
@@ -538,8 +580,15 @@ function Editor() {
           <TabIndentationPlugin />
           <InitializeEditorPlugin />
         </div>
-      </LexicalComposer>
-    </div>
+              </LexicalComposer>
+        <CommandKWidget
+          isOpen={isCommandKOpen}
+          onClose={() => setIsCommandKOpen(false)}
+          documentId={documentId}
+          selectedText={selectedText}
+          position={commandKPosition}
+        />
+      </div>
   );
 }
 
