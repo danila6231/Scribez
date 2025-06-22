@@ -24,6 +24,10 @@ LLM_CONFIG = {
     }
 }
 
+GENERAL_SYSTEM_PROMPT = '''You are a helpful research assistant integrated into a text editor. Your goal is to perform a web search and provide a concise, well-structured summary on the given topic. The summary should be written in clear, professional language, suitable for a research paper or report. Do not include conversational filler. Given that today's date is June 22, 2025, focus on the latest developments. Stick to the undergrad level of writing. DO NOT ADD UNNECESSARY DETAILS.'''
+
+EDIT_SYSTEM_PROMPT = """You are a document editor. When given a document and an edit request, you should return ONLY the edited document content. Do not include any explanations, comments, or additional text. Just return the modified document"""
+
 # Initialize clients
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 claude_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
@@ -104,33 +108,39 @@ def analyze_query_complexity(message: str, conversation_history: Optional[List[D
             confidence=1
         )
 
-def groq_internet_search(message: str) -> str:
-    """Use Groq to search the internet for information"""
+# def groq_internet_search(message: str) -> str:
+#     """Use Groq to search the internet for information"""
 
-    system_prompt = '''You are a helpful research assistant integrated into a text editor.
-    Your goal is to perform a web search and provide a concise, well-structured summary 
-    on the given topic. The summary should be written in clear, professional language, 
-    suitable for a research paper or report. Do not include conversational filler. 
-    Given that today's date is June 22, 2025, focus on the latest developments.'''
-    try:
-        response = groq_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ],
-            model="compound-beta-mini",  # Use configured responder model
-            temperature=0.7,
-            max_tokens=1000
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Error during internet search: {str(e)}"
+#     system_prompt = '''You are a helpful research assistant integrated into a text editor.
+#     Your goal is to perform a web search and provide a concise, well-structured summary 
+#     on the given topic. The summary should be written in clear, professional language, 
+#     suitable for a research paper or report. Do not include conversational filler. 
+#     Given that today's date is June 22, 2025, focus on the latest developments.'''
+#     try:
+#         response = groq_client.chat.completions.create(
+#             messages=[
+#                 {"role": "system", "content": system_prompt},
+#                 {"role": "user", "content": message}
+#             ],
+#             model="compound-beta-mini",  # Use configured responder model
+#             temperature=0.7,
+#             max_tokens=1000
+#         )
+#         return response.choices[0].message.content
+#     except Exception as e:
+#         return f"Error during internet search: {str(e)}"
 
-def get_groq_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None) -> Union[str, Generator[str, None, None]]:
+def get_groq_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None, edit_mode: bool = False) -> Union[str, Generator[str, None, None]]:
     """Get response from Groq for simple queries"""
     try:
+        # Use different system prompt for edit mode
+        if edit_mode:
+            system_prompt = GENERAL_SYSTEM_PROMPT + "\n" + EDIT_SYSTEM_PROMPT
+        else:
+            system_prompt = GENERAL_SYSTEM_PROMPT + "\n" + GROQ_RESPONDER_PROMPT
+            
         messages = [
-            {"role": "system", "content": GROQ_RESPONDER_PROMPT}
+            {"role": "system", "content": system_prompt}
         ]
         
         # Add document content if provided
@@ -169,18 +179,25 @@ def get_groq_response(message: str, conversation_history: Optional[List[Dict[str
         else:
             raise Exception(f"Groq response error: {str(e)}")
 
-def get_claude_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None) -> Union[str, Generator[str, None, None]]:
+def get_claude_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None, edit_mode: bool = False) -> Union[str, Generator[str, None, None]]:
     """Get response from Claude for complex queries"""
     try:
         # Prepare messages in Claude format
         messages = []
-        
+        system_prompt = GENERAL_SYSTEM_PROMPT
         # Add document content if provided
         if document_content:
-            messages.append({
-                "role": "user",
-                "content": f"Here is the current document content:\n{document_content}\n\nBased on this context, please answer the following question:"
-            })
+            if edit_mode:
+                messages.append({
+                    "role": "user",
+                    "content": f"Here is the current document content:\n{document_content}\n\nApply the following edit and return ONLY the edited document content, nothing else:"
+                })
+                system_prompt += "\n" + EDIT_SYSTEM_PROMPT
+            else:
+                messages.append({
+                    "role": "user",
+                    "content": f"Here is the current document content:\n{document_content}\n\nBased on this context, please answer the following question:"
+                })
         
         if conversation_history:
             for msg in conversation_history[-10:]:  # More context for complex queries
@@ -195,8 +212,9 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
             def generate():
                 with claude_client.messages.stream(
                     model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
+                    system=system_prompt,
                     messages=messages,
-                    max_tokens=2000,
+                    max_tokens=1000,
                     temperature=0.7,
                     tools=[{
                         "type": "web_search_20250305",
@@ -210,6 +228,7 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
         else:
             response = claude_client.messages.create(
                 model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
+                system=system_prompt,
                 messages=messages,
                 max_tokens=2000,
                 temperature=0.7,
@@ -229,7 +248,7 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
         else:
             raise Exception(f"Claude response error: {str(e)}")
 
-def get_gemini_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None) -> Union[str, Generator[str, None, None]]:
+def get_gemini_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False, document_content: Optional[str] = None, edit_mode: bool = False) -> Union[str, Generator[str, None, None]]:
     """Get response from Gemini for complex queries"""
     try:
         # Initialize Gemini model
@@ -240,7 +259,10 @@ def get_gemini_response(message: str, conversation_history: Optional[List[Dict[s
         
         # Add document content if provided
         if document_content:
-            full_prompt = f"Current document content:\n{document_content}\n\n"
+            if edit_mode:
+                full_prompt = f"Current document content:\n{document_content}\n\nApply the following edit and return ONLY the edited document content, nothing else:\n"
+            else:
+                full_prompt = f"Current document content:\n{document_content}\n\n"
         
         if conversation_history:
             full_prompt += "Previous conversation:\n"
@@ -274,14 +296,23 @@ def get_llm_response(
     conversation_history: Optional[List[Dict[str, str]]] = None,
     preferred_complex_model: str = "claude",  # "claude" or "gemini"
     stream: bool = False,
-    document_content: Optional[str] = None
+    document_content: Optional[str] = None,
+    edit_mode: bool = False
 ) -> Union[LLMResponse, Generator[Dict[str, Any], None, None]]:
     """
     Main function to get LLM response with intelligent routing
     """
     try:
-        # Step 1: Analyze query complexity with Groq
-        analysis = analyze_query_complexity(message, conversation_history)
+        # Step 1: Analyze query complexity with Groq (skip for edit mode)
+        if edit_mode:
+            # For edit mode, always use the complex model for better accuracy
+            analysis = QueryAnalysis(
+                use_simple_model=False,
+                reason="Edit mode requires complex model for accurate document generation",
+                confidence=10
+            )
+        else:
+            analysis = analyze_query_complexity(message, conversation_history)
         
         if stream:
             def generate():
@@ -298,25 +329,25 @@ def get_llm_response(
                 # Then stream the response
                 if analysis.use_simple_model:
                     # Simple query - use Groq
-                    response_generator = get_groq_response(message, conversation_history, stream=True, document_content=document_content)
+                    response_generator = get_groq_response(message, conversation_history, stream=True, document_content=document_content, edit_mode=edit_mode)
                     model = "groq"
                 else:
                     # Complex query - use Claude or Gemini
                     if preferred_complex_model == "gemini":
                         try:
-                            response_generator = get_gemini_response(message, conversation_history, stream=True, document_content=document_content)
+                            response_generator = get_gemini_response(message, conversation_history, stream=True, document_content=document_content, edit_mode=edit_mode)
                             model = "gemini"
                         except Exception:
                             # Fallback to Claude if Gemini fails
-                            response_generator = get_claude_response(message, conversation_history, stream=True, document_content=document_content)
+                            response_generator = get_claude_response(message, conversation_history, stream=True, document_content=document_content, edit_mode=edit_mode)
                             model = "claude"
                     else:
                         try:
-                            response_generator = get_claude_response(message, conversation_history, stream=True, document_content=document_content)
+                            response_generator = get_claude_response(message, conversation_history, stream=True, document_content=document_content, edit_mode=edit_mode)
                             model = "claude"
                         except Exception:
                             # Fallback to Gemini if Claude fails
-                            response_generator = get_gemini_response(message, conversation_history, stream=True, document_content=document_content)
+                            response_generator = get_gemini_response(message, conversation_history, stream=True, document_content=document_content, edit_mode=edit_mode)
                             model = "gemini"
                 
                 yield {"type": "model", "model": model}
@@ -332,25 +363,25 @@ def get_llm_response(
             # Step 2: Route to appropriate model
             if analysis.use_simple_model:
                 # Simple query - use Groq
-                response = get_groq_response(message, conversation_history, document_content=document_content)
+                response = get_groq_response(message, conversation_history, document_content=document_content, edit_mode=edit_mode)
                 model = "groq"
             else:
                 # Complex query - use Claude or Gemini
                 if preferred_complex_model == "gemini":
                     try:
-                        response = get_gemini_response(message, conversation_history, document_content=document_content)
+                        response = get_gemini_response(message, conversation_history, document_content=document_content, edit_mode=edit_mode)
                         model = "gemini"
                     except Exception as e:
                         # Fallback to Claude if Gemini fails
-                        response = get_claude_response(message, conversation_history, document_content=document_content)
+                        response = get_claude_response(message, conversation_history, document_content=document_content, edit_mode=edit_mode)
                         model = "claude"
                 else:
                     try:
-                        response = get_claude_response(message, conversation_history, document_content=document_content)
+                        response = get_claude_response(message, conversation_history, document_content=document_content, edit_mode=edit_mode)
                         model = "claude"
                     except Exception as e:
                         # Fallback to Gemini if Claude fails
-                        response = get_gemini_response(message, conversation_history, document_content=document_content)
+                        response = get_gemini_response(message, conversation_history, document_content=document_content, edit_mode=edit_mode)
                         model = "gemini"
             
             return LLMResponse(

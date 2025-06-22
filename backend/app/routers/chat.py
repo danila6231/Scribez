@@ -22,6 +22,7 @@ class ChatRequest(BaseModel):
     document_content: Optional[str] = ""  # Current document content, defaults to empty string
     document_id: Optional[str] = None  # Document ID for context
     selected_text: Optional[str] = None  # Selected text for Command+K interface
+    edit_mode: Optional[bool] = False  # Edit mode for document generation
 
 class ChatResponse(BaseModel):
     response: str
@@ -69,7 +70,8 @@ async def send_message(request: ChatRequest):
             message=request.message,
             conversation_history=conversation_history,
             preferred_complex_model=request.preferred_complex_model,
-            document_content=document_content
+            document_content=document_content,
+            edit_mode=request.edit_mode
         )
         
         # Prepare analysis data if available
@@ -131,7 +133,8 @@ async def stream_message(request: ChatRequest):
                 conversation_history=conversation_history,
                 preferred_complex_model=request.preferred_complex_model,
                 stream=True,
-                document_content=document_content
+                document_content=document_content,
+                edit_mode=request.edit_mode
             )
             
             # Stream each chunk as Server-Sent Events

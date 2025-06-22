@@ -651,6 +651,114 @@ body {
   z-index: 2;
 }
 
+/* Mode Toggle */
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: #f0f0f0;
+  padding: 4px;
+  border-radius: 20px;
+}
+
+.mode-button {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 16px;
+  transition: all 0.2s;
+}
+
+.mode-button:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.mode-button.active {
+  background: white;
+  color: #2196F3;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mode-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Diff Overlay */
+.diff-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.diff-overlay-content {
+  width: 80%;
+  max-width: 800px;
+  max-height: 80vh;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.diff-overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.diff-overlay-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.diff-overlay-header button {
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.diff-overlay-header button:hover {
+  background: #f0f0f0;
+}
+
+.diff-view {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
 /* Resize Handle */
 .resize-handle {
   width: 4px;
