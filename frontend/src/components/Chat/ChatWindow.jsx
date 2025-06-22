@@ -40,36 +40,121 @@ function ChatWindow({ documentId }) {
 
     // Add user message to chat
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsLoading(true);
 
+    // Create placeholder for streaming AI response
+    const streamingMessageId = Date.now();
+    const streamingMessage = {
+      id: streamingMessageId,
+      content: '',
+      role: 'assistant',
+      timestamp: new Date().toISOString(),
+      isStreaming: true,
+      model: 'thinking...'
+    };
+    
+    setMessages(prev => [...prev, streamingMessage]);
+
     try {
-      // Make API call to backend
-      const response = await axios.post('/api/chat/message', {
-        message: inputValue,
-        conversation_history: messages,
-        document_id: documentId, // Include document context
+      // Use streaming endpoint
+      const response = await fetch('/api/chat/message/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentInput,
+          conversation_history: messages,
+          document_id: documentId,
+        }),
       });
 
-      // Add AI response to chat
-      const aiMessage = {
-        content: response.data.response,
-        role: 'assistant',
-        timestamp: response.data.timestamp,
-      };
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      setMessages(prev => [...prev, aiMessage]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Keep the last incomplete line in buffer
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'metadata') {
+                // Update with analysis info
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, analysis: data.analysis }
+                    : msg
+                ));
+              } else if (data.type === 'model') {
+                // Update with model info
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, model: data.model }
+                    : msg
+                ));
+              } else if (data.type === 'content') {
+                // Update the streaming message with new content
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, content: msg.content + data.content }
+                    : msg
+                ));
+              } else if (data.type === 'done') {
+                // Mark streaming as complete
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, isStreaming: false, timestamp: new Date().toISOString() }
+                    : msg
+                ));
+              } else if (data.type === 'error') {
+                // Handle streaming error
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { 
+                        ...msg, 
+                        content: `Error: ${data.error}`,
+                        isStreaming: false,
+                        hasError: true 
+                      }
+                    : msg
+                ));
+              }
+            } catch (parseError) {
+              console.error('Error parsing SSE data:', parseError, 'Raw line:', line);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       
-      // Add error message
-      const errorMessage = {
-        content: 'Sorry, I encountered an error. Please try again.',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
+      // Update streaming message with error
+      setMessages(prev => prev.map(msg => 
+        msg.id === streamingMessageId 
+          ? { 
+              ...msg, 
+              content: 'Sorry, I encountered an error. Please try again.',
+              isStreaming: false,
+              hasError: true 
+            }
+          : msg
+      ));
     } finally {
       setIsLoading(false);
       // Focus back on input
@@ -105,18 +190,7 @@ function ChatWindow({ documentId }) {
           ))
         )}
         
-        {isLoading && (
-          <div className="chat-message assistant">
-            <div className="message-content">
-              <div className="message-role">AI Assistant</div>
-              <div className="loading-dots">
-                <div className="loading-dot"></div>
-                <div className="loading-dot"></div>
-                <div className="loading-dot"></div>
-              </div>
-            </div>
-          </div>
-        )}
+
         
         <div ref={messagesEndRef} />
       </div>

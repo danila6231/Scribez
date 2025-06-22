@@ -1,7 +1,10 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, AsyncGenerator
 from datetime import datetime
+import json
+import asyncio
 from app.llm import get_llm_response, validate_api_keys
 
 router = APIRouter()
@@ -63,6 +66,54 @@ async def send_message(request: ChatRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/message/stream")
+async def stream_message(request: ChatRequest):
+    """
+    Stream a message response from the AI assistant using Server-Sent Events
+    """
+    async def generate():
+        try:
+            # Convert conversation history to the format expected by llm.py
+            conversation_history = []
+            if request.conversation_history:
+                for msg in request.conversation_history:
+                    conversation_history.append({
+                        "role": msg.role,
+                        "content": msg.content
+                    })
+            
+            # Get streaming LLM response
+            response_generator = get_llm_response(
+                message=request.message,
+                conversation_history=conversation_history,
+                preferred_complex_model=request.preferred_complex_model,
+                stream=True
+            )
+            
+            # Stream each chunk as Server-Sent Events
+            for chunk in response_generator:
+                # Format as SSE
+                data = json.dumps(chunk)
+                yield f"data: {data}\n\n"
+                
+                # Small delay to prevent overwhelming the client
+                await asyncio.sleep(0.01)
+            
+        except Exception as e:
+            # Send error as SSE
+            error_data = json.dumps({"type": "error", "error": str(e)})
+            yield f"data: {error_data}\n\n"
+    
+    return StreamingResponse(
+        generate(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream",
+        }
+    )
 
 @router.get("/health")
 async def health_check():

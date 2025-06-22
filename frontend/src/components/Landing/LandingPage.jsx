@@ -18,7 +18,7 @@ return (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#4285f4">
                 <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
             </svg>
-            <span className="logo-text">WriteFlow</span>
+            <span className="logo-text">Skribez</span>
             </div>
         </div>
         <div className="nav-right">
@@ -131,7 +131,7 @@ return (
 
     <footer className="landing-footer">
         <div className="footer-container">
-        <p>&copy; 2024 WriteFlow. Made with ❤️ by the QuackHacks Tech Team.</p>
+        <p>&copy; 2024 Skribez. Made with ❤️ by the QuackHacks Tech Team.</p>
         </div>
     </footer>
     </div>

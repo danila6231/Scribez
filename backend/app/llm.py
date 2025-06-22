@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Generator, Union
 from groq import Groq
 import anthropic
 import google.generativeai as genai
@@ -104,7 +104,7 @@ def analyze_query_complexity(message: str, conversation_history: Optional[List[D
             confidence=1
         )
 
-def get_groq_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
+def get_groq_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False) -> Union[str, Generator[str, None, None]]:
     """Get response from Groq for simple queries"""
     try:
         messages = [
@@ -122,15 +122,28 @@ def get_groq_response(message: str, conversation_history: Optional[List[Dict[str
             model=LLM_CONFIG["groq"]["responder_model"],  # Use configured responder model
             messages=messages,
             temperature=0.7,
-            max_tokens=1000
+            max_tokens=1000,
+            stream=stream
         )
         
-        return completion.choices[0].message.content
+        if stream:
+            def generate():
+                for chunk in completion:
+                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                        yield chunk.choices[0].delta.content
+            return generate()
+        else:
+            return completion.choices[0].message.content
         
     except Exception as e:
-        raise Exception(f"Groq response error: {str(e)}")
+        if stream:
+            def error_generator():
+                yield f"Error: {str(e)}"
+            return error_generator()
+        else:
+            raise Exception(f"Groq response error: {str(e)}")
 
-def get_claude_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
+def get_claude_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False) -> Union[str, Generator[str, None, None]]:
     """Get response from Claude for complex queries"""
     try:
         # Prepare messages in Claude format
@@ -145,19 +158,35 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
         
         messages.append({"role": "user", "content": message})
         
-        response = claude_client.messages.create(
-            model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
-            messages=messages,
-            max_tokens=2000,
-            temperature=0.7
-        )
-        
-        return response.content[0].text
+        if stream:
+            def generate():
+                with claude_client.messages.stream(
+                    model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
+                    messages=messages,
+                    max_tokens=2000,
+                    temperature=0.7
+                ) as stream:
+                    for text in stream.text_stream:
+                        yield text
+            return generate()
+        else:
+            response = claude_client.messages.create(
+                model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
+                messages=messages,
+                max_tokens=2000,
+                temperature=0.7
+            )
+            return response.content[0].text
         
     except Exception as e:
-        raise Exception(f"Claude response error: {str(e)}")
+        if stream:
+            def error_generator():
+                yield f"Error: {str(e)}"
+            return error_generator()
+        else:
+            raise Exception(f"Claude response error: {str(e)}")
 
-def get_gemini_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
+def get_gemini_response(message: str, conversation_history: Optional[List[Dict[str, str]]] = None, stream: bool = False) -> Union[str, Generator[str, None, None]]:
     """Get response from Gemini for complex queries"""
     try:
         # Initialize Gemini model
@@ -173,17 +202,31 @@ def get_gemini_response(message: str, conversation_history: Optional[List[Dict[s
         
         full_prompt += f"USER: {message}\nASSISTANT:"
         
-        response = model.generate_content(full_prompt)
-        return response.text
+        if stream:
+            def generate():
+                response = model.generate_content(full_prompt, stream=True)
+                for chunk in response:
+                    if chunk.text:
+                        yield chunk.text
+            return generate()
+        else:
+            response = model.generate_content(full_prompt)
+            return response.text
         
     except Exception as e:
-        raise Exception(f"Gemini response error: {str(e)}")
+        if stream:
+            def error_generator():
+                yield f"Error: {str(e)}"
+            return error_generator()
+        else:
+            raise Exception(f"Gemini response error: {str(e)}")
 
 def get_llm_response(
     message: str, 
     conversation_history: Optional[List[Dict[str, str]]] = None,
-    preferred_complex_model: str = "claude"  # "claude" or "gemini"
-) -> LLMResponse:
+    preferred_complex_model: str = "claude",  # "claude" or "gemini"
+    stream: bool = False
+) -> Union[LLMResponse, Generator[Dict[str, Any], None, None]]:
     """
     Main function to get LLM response with intelligent routing
     """
@@ -191,43 +234,94 @@ def get_llm_response(
         # Step 1: Analyze query complexity with Groq
         analysis = analyze_query_complexity(message, conversation_history)
         
-        # Step 2: Route to appropriate model
-        if analysis.use_simple_model:
-            # Simple query - use Groq
-            response = get_groq_response(message, conversation_history)
-            model = "groq"
+        if stream:
+            def generate():
+                # First yield metadata
+                yield {
+                    "type": "metadata",
+                    "analysis": {
+                        "use_simple_model": analysis.use_simple_model,
+                        "reason": analysis.reason,
+                        "confidence": analysis.confidence
+                    }
+                }
+                
+                # Then stream the response
+                if analysis.use_simple_model:
+                    # Simple query - use Groq
+                    response_generator = get_groq_response(message, conversation_history, stream=True)
+                    model = "groq"
+                else:
+                    # Complex query - use Claude or Gemini
+                    if preferred_complex_model == "gemini":
+                        try:
+                            response_generator = get_gemini_response(message, conversation_history, stream=True)
+                            model = "gemini"
+                        except Exception:
+                            # Fallback to Claude if Gemini fails
+                            response_generator = get_claude_response(message, conversation_history, stream=True)
+                            model = "claude"
+                    else:
+                        try:
+                            response_generator = get_claude_response(message, conversation_history, stream=True)
+                            model = "claude"
+                        except Exception:
+                            # Fallback to Gemini if Claude fails
+                            response_generator = get_gemini_response(message, conversation_history, stream=True)
+                            model = "gemini"
+                
+                yield {"type": "model", "model": model}
+                
+                # Stream content chunks
+                for chunk in response_generator:
+                    yield {"type": "content", "content": chunk}
+                
+                yield {"type": "done"}
+            
+            return generate()
         else:
-            # Complex query - use Claude or Gemini
-            if preferred_complex_model == "gemini":
-                try:
-                    response = get_gemini_response(message, conversation_history)
-                    model = "gemini"
-                except Exception as e:
-                    # Fallback to Claude if Gemini fails
-                    response = get_claude_response(message, conversation_history)
-                    model = "claude"
+            # Step 2: Route to appropriate model
+            if analysis.use_simple_model:
+                # Simple query - use Groq
+                response = get_groq_response(message, conversation_history)
+                model = "groq"
             else:
-                try:
-                    response = get_claude_response(message, conversation_history)
-                    model = "claude"
-                except Exception as e:
-                    # Fallback to Gemini if Claude fails
-                    response = get_gemini_response(message, conversation_history)
-                    model = "gemini"
-        
-        return LLMResponse(
-            response=response,
-            used_model=model,
-            analysis=analysis
-        )
+                # Complex query - use Claude or Gemini
+                if preferred_complex_model == "gemini":
+                    try:
+                        response = get_gemini_response(message, conversation_history)
+                        model = "gemini"
+                    except Exception as e:
+                        # Fallback to Claude if Gemini fails
+                        response = get_claude_response(message, conversation_history)
+                        model = "claude"
+                else:
+                    try:
+                        response = get_claude_response(message, conversation_history)
+                        model = "claude"
+                    except Exception as e:
+                        # Fallback to Gemini if Claude fails
+                        response = get_gemini_response(message, conversation_history)
+                        model = "gemini"
+            
+            return LLMResponse(
+                response=response,
+                used_model=model,
+                analysis=analysis
+            )
         
     except Exception as e:
-        # Ultimate fallback - return error message
-        return LLMResponse(
-            response=f"I apologize, but I encountered an error processing your request: {str(e)}",
-            used_model="error",
-            analysis=None
-        )
+        if stream:
+            def error_generator():
+                yield {"type": "error", "error": str(e)}
+            return error_generator()
+        else:
+            # Ultimate fallback - return error message
+            return LLMResponse(
+                response=f"I apologize, but I encountered an error processing your request: {str(e)}",
+                used_model="error",
+                analysis=None
+            )
 
 # Helper function to validate API keys
 def validate_api_keys() -> Dict[str, bool]:

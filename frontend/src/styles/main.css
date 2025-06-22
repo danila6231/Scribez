@@ -266,11 +266,78 @@ body {
   text-align: left;
 }
 
-.message-role {
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
   font-size: 12px;
   font-weight: 600;
-  color: #666;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  border: 2px solid;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.model-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Model-specific styling */
+.model-badge.groq {
+  color: #ff6b35;
+  border-color: #ff6b35;
+  background: linear-gradient(135deg, rgba(255,107,53,0.1), rgba(255,107,53,0.05));
+}
+
+.model-badge.claude {
+  color: #7c3aed;
+  border-color: #7c3aed;
+  background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(124,58,237,0.05));
+}
+
+.model-badge.gpt-4 {
+  color: #10a37f;
+  border-color: #10a37f;
+  background: linear-gradient(135deg, rgba(16,163,127,0.1), rgba(16,163,127,0.05));
+}
+
+.model-badge.gpt-3 {
+  color: #0066cc;
+  border-color: #0066cc;
+  background: linear-gradient(135deg, rgba(0,102,204,0.1), rgba(0,102,204,0.05));
+}
+
+.model-icon {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.model-name {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.streaming-indicator {
+  font-size: 10px;
+  opacity: 0.7;
+  font-style: italic;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .message-text {
@@ -345,38 +412,20 @@ body {
   cursor: not-allowed;
 }
 
-/* Loading State */
-.loading-dots {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  padding: 8px;
+/* Streaming cursor animation */
+.streaming-cursor {
+  animation: blink 1s infinite;
+  font-weight: bold;
+  color: #2196F3;
+  margin-left: 2px;
 }
 
-.loading-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #666;
-  border-radius: 50%;
-  animation: loadingDot 1.4s infinite ease-in-out both;
-}
-
-.loading-dot:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.loading-dot:nth-child(2) {
-  animation-delay: -0.16s;
-}
-
-@keyframes loadingDot {
-  0%, 80%, 100% {
-    transform: scale(0);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1);
+@keyframes blink {
+  0%, 50% {
     opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
   }
 }
 
@@ -486,7 +535,7 @@ body {
 }
 
 .logo-text {
-  font-size: 20px;
+  font-size: 1.8rem;
   font-weight: 500;
   color: #333;
 }
@@ -563,7 +612,7 @@ body {
 }
 
 .hero-subtitle {
-  font-size: 18px;
+  font-size: 1.5rem;
   line-height: 1.6;
   margin-bottom: 32px;
   opacity: 0.9;
