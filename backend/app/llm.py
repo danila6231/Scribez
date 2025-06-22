@@ -58,7 +58,7 @@ Complex queries include:
 - Tasks requiring deep understanding or nuanced judgment
 
 Respond with a JSON object containing:
-- "use_simple_model": boolean (true if you should handle it, false to route to Claude)
+- "use_simple_model": boolean
 - "reason": string explaining your decision
 - "confidence": number 1-10 for how confident you are in this decision
 

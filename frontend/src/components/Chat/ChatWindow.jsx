@@ -2,12 +2,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ChatMessage from './ChatMessage';
 
-function ChatWindow() {
+function ChatWindow({ documentId }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Load chat history when document changes
+  useEffect(() => {
+    if (documentId) {
+      // TODO: Load chat history from database for this document
+      // loadChatHistory(documentId);
+      setMessages([]); // Temporary: clear until we implement database loading
+    }
+  }, [documentId]);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -39,6 +48,7 @@ function ChatWindow() {
       const response = await axios.post('/api/chat/message', {
         message: inputValue,
         conversation_history: messages,
+        document_id: documentId, // Include document context
       });
 
       // Add AI response to chat

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from app.routers import chat, diff
 
 from app.routers import chat, documents
 from app.database import create_indexes
@@ -26,6 +27,7 @@ app.add_middleware(
 # Include routers
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
+app.include_router(diff.router, prefix="/api/diff", tags=["diff"])
 
 @app.get("/")
 async def root():
