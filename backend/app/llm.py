@@ -197,7 +197,12 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
                     model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
                     messages=messages,
                     max_tokens=2000,
-                    temperature=0.7
+                    temperature=0.7,
+                    tools=[{
+                        "type": "web_search_20250305",
+                        "name": "web_search",
+                        "max_uses": 5
+                    }]
                 ) as stream:
                     for text in stream.text_stream:
                         yield text
@@ -207,7 +212,12 @@ def get_claude_response(message: str, conversation_history: Optional[List[Dict[s
                 model=LLM_CONFIG["claude"]["model"],  # Use configured Claude model
                 messages=messages,
                 max_tokens=2000,
-                temperature=0.7
+                temperature=0.7,
+                tools=[{
+                    "type": "web_search_20250305",
+                    "name": "web_search",
+                    "max_uses": 5
+                }]
             )
             return response.content[0].text
         
