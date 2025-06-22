@@ -3,7 +3,145 @@ import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
 import { ListItemNode, ListNode } from '@lexical/list';
 import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
-import { TextNode } from 'lexical';
+import { TextNode, DecoratorNode } from 'lexical';
+import mermaid from 'mermaid';
+import React from 'react';
+
+// Initialize Mermaid
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+});
+
+// Custom Mermaid Node
+export class MermaidNode extends DecoratorNode {
+  __code;
+
+  static getType() {
+    return 'mermaid';
+  }
+
+  static clone(node) {
+    return new MermaidNode(node.__code, node.__key);
+  }
+
+  constructor(code, key) {
+    super(key);
+    this.__code = code;
+  }
+
+  createDOM() {
+    const div = document.createElement('div');
+    div.className = 'mermaid-wrapper';
+    return div;
+  }
+
+  updateDOM() {
+    return false;
+  }
+
+  setCode(code) {
+    const writable = this.getWritable();
+    writable.__code = code;
+  }
+
+  getCode() {
+    return this.__code;
+  }
+
+  decorate() {
+    return React.createElement(MermaidComponent, {
+      code: this.__code,
+      nodeKey: this.getKey(),
+    });
+  }
+
+  static importJSON(serializedNode) {
+    const { code } = serializedNode;
+    const node = new MermaidNode(code);
+    return node;
+  }
+
+  exportJSON() {
+    return {
+      code: this.getCode(),
+      type: 'mermaid',
+      version: 1,
+    };
+  }
+}
+
+// React component for rendering Mermaid diagrams
+function MermaidComponent({ code, nodeKey }) {
+  const [svg, setSvg] = React.useState('');
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    const renderDiagram = async () => {
+      try {
+        const id = `mermaid-${nodeKey}`;
+        const { svg } = await mermaid.render(id, code);
+        setSvg(svg);
+        setError('');
+      } catch (err) {
+        console.error('Mermaid rendering error:', err);
+        setError('Failed to render diagram');
+        setSvg('');
+      }
+    };
+
+    if (code) {
+      renderDiagram();
+    }
+  }, [code, nodeKey]);
+
+  if (error) {
+    return React.createElement('div', {
+      className: 'mermaid-error',
+      style: {
+        padding: '10px',
+        backgroundColor: '#ffebee',
+        border: '1px solid #f44336',
+        borderRadius: '4px',
+        color: '#d32f2f',
+      }
+    }, `Error: ${error}`);
+  }
+
+  if (!svg) {
+    return React.createElement('div', {
+      className: 'mermaid-loading',
+      style: {
+        padding: '10px',
+        textAlign: 'center',
+        color: '#666',
+      }
+    }, 'Rendering diagram...');
+  }
+
+  return React.createElement('div', {
+    className: 'mermaid-diagram',
+    style: {
+      padding: '10px',
+      textAlign: 'center',
+      backgroundColor: '#f9f9f9',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      margin: '10px 0',
+    },
+    dangerouslySetInnerHTML: { __html: svg }
+  });
+}
+
+// Helper function to create mermaid node
+export function $createMermaidNode(code) {
+  return new MermaidNode(code);
+}
+
+export function $isMermaidNode(node) {
+  return node instanceof MermaidNode;
+}
 
 // Custom Highlight Node
 export class HighlightNode extends TextNode {
@@ -180,6 +318,7 @@ export const editorConfig = {
     AutoLinkNode,
     LinkNode,
     HighlightNode,
+    MermaidNode,
   ],
 };
 

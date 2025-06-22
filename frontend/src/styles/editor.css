@@ -318,4 +318,135 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Responsive design for mobile devices */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+
+  .toolbar-button {
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+
+  .ContentEditable__root {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .editor-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .document-title-input {
+    font-size: 16px;
+  }
+}
+
+/* Mermaid diagram styles */
+.mermaid-wrapper {
+  margin: 16px 0;
+}
+
+.mermaid-diagram {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  margin: 16px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-error {
+  background-color: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  padding: 12px;
+  color: #d32f2f;
+  margin: 16px 0;
+  font-family: monospace;
+}
+
+.mermaid-loading {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  margin: 16px 0;
+}
+
+/* Loading and error states for diagram generation */
+.editor-paragraph:has-text("🔄 Generating diagram...") {
+  background-color: #f0f8ff;
+  border: 2px dashed #2196f3;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 16px 0;
+  text-align: center;
+  color: #1976d2;
+  font-weight: 500;
+  animation: pulse 2s infinite;
+}
+
+.editor-paragraph:has-text("❌ Failed to generate diagram") {
+  background-color: #ffebee;
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: center;
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+/* Loading and error states for diagram generation */
+.diagram-loading {
+  background-color: #f0f8ff;
+  border: 2px dashed #2196f3;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 16px 0;
+  text-align: center;
+  color: #1976d2;
+  font-weight: 500;
+  animation: pulse 2s infinite;
+}
+
+.diagram-error {
+  background-color: #ffebee;
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: center;
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
 } 

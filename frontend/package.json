@@ -23,6 +23,7 @@
     "@lexical/utils": "^0.12.2",
     "axios": "^1.6.2",
     "lexical": "^0.12.2",
+    "mermaid": "^11.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",

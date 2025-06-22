@@ -7,6 +7,7 @@ import { $createHeadingNode, $createQuoteNode } from '@lexical/rich-text';
 import { $createCodeNode } from '@lexical/code';
 import { $createLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $createMermaidNode } from './editorConfig';
 import linkIcon from '../../assets/icons/icons8-link-50.png';
 import quoteIcon from '../../assets/icons/quote.png';
 import italicIcon from '../../assets/icons/italic.png';
@@ -176,6 +177,65 @@ function Toolbar() {
         selection.insertNodes([paragraph]);
       }
     });
+  };
+
+  const insertMermaidDiagram = async () => {
+    const query = prompt('What diagram would you like to generate?');
+    if (!query) return;
+    
+    // Create a loading placeholder first
+    let loadingNode;
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        // Create a loading placeholder
+        const loadingParagraph = $createParagraphNode();
+        loadingParagraph.append($createTextNode('🔄 Generating diagram...'));
+        loadingParagraph.setFormat('center');
+        
+        const beforeParagraph = $createParagraphNode();
+        const afterParagraph = $createParagraphNode();
+        
+        selection.insertNodes([beforeParagraph, loadingParagraph, afterParagraph]);
+        loadingNode = loadingParagraph;
+      }
+    });
+    
+    try {
+      // Call the API to generate Mermaid diagram
+      const response = await fetch('https://aiberkeley-hack.onrender.com/api/chat/mermaid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate diagram');
+      }
+      
+      const data = await response.json();
+      const mermaidCode = data.diagram;
+      
+      // Replace the loading placeholder with the actual diagram
+      editor.update(() => {
+        if (loadingNode) {
+          const mermaidNode = $createMermaidNode(mermaidCode);
+          loadingNode.replace(mermaidNode);
+        }
+      });
+    } catch (error) {
+      // Replace loading with error message
+      editor.update(() => {
+        if (loadingNode) {
+          const errorParagraph = $createParagraphNode();
+          errorParagraph.append($createTextNode(`❌ Failed to generate diagram: ${error.message}`));
+          errorParagraph.setFormat('center');
+          loadingNode.replace(errorParagraph);
+        }
+      });
+    }
   };
 
   const openPrintView = () => {
@@ -377,6 +437,17 @@ function Toolbar() {
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <path d="M12 8a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 .5.5z"/>
+        </svg>
+      </button>
+      <button
+        className="toolbar-button"
+        onClick={() => insertMermaidDiagram()}
+        aria-label="Insert Mermaid Diagram"
+        title="Insert Mermaid Diagram"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 2a2 2 0 0 0-2 2v1H5a2 2 0 0 0-2 2v2h1v-2a1 1 0 0 1 1-1h1v4h1V4a1 1 0 0 1 2 0v6h1V6h1a1 1 0 0 1 1 1v2h1V7a2 2 0 0 0-2-2h-1V4a2 2 0 0 0-2-2z"/>
+          <path d="M5 10.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-3zm8 0a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-3z"/>
         </svg>
       </button>
       <button
