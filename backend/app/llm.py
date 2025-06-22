@@ -307,7 +307,7 @@ def get_llm_response(
         if edit_mode:
             # For edit mode, always use the complex model for better accuracy
             analysis = QueryAnalysis(
-                use_simple_model=False,
+                use_simple_model=True,
                 reason="Edit mode requires complex model for accurate document generation",
                 confidence=10
             )
