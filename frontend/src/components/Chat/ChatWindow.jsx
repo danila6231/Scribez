@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ChatMessage from './ChatMessage';
-import { $convertToMarkdownString } from '@lexical/markdown';
+import { $convertToMarkdownString, $convertFromMarkdownString } from '@lexical/markdown';
 import { TRANSFORMERS } from '@lexical/markdown';
+import { $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
 import DiffView from '../Diff/DiffView';
 
 // Get the API URL from environment variables or use relative path for local development
@@ -23,7 +24,26 @@ function ChatWindow({ documentId }) {
 
   // Function to apply changes to the editor
   const applyChangesToEditor = (changes) => {
-    if (!window.lexicalEditor) return;
+    // Multiple checks to ensure editor is available
+    const editor = window.lexicalEditor;
+    if (!editor) {
+      console.error('❌ Lexical editor not available for applying changes');
+      return;
+    }
+
+    // Check if editor is properly initialized
+    try {
+      const editorState = editor.getEditorState();
+      if (!editorState) {
+        console.error('❌ Lexical editor state not available');
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Error accessing editor state:', error);
+      return;
+    }
+
+    console.log('✅ Applying', changes.length, 'changes to editor');
     
     // Sort changes by position to apply them correctly
     const sortedChanges = [...changes].sort((a, b) => {
@@ -57,23 +77,58 @@ function ChatWindow({ documentId }) {
       }
     });
 
+    console.log('📝 New content length:', newText.length);
+    console.log('📝 New content preview:', newText.substring(0, 100));
+
     // Update the Lexical editor with the new content
-    window.lexicalEditor.update(() => {
-      const root = window.$getRoot();
-      root.clear();
-      
-      // Convert the new text back to Lexical nodes
-      // This is a simplified version - you might need to use proper markdown parsing
-      const paragraphs = newText.split('\n\n');
-      paragraphs.forEach((paragraph, index) => {
-        if (paragraph.trim()) {
-          const paragraphNode = window.$createParagraphNode();
-          const textNode = window.$createTextNode(paragraph);
-          paragraphNode.append(textNode);
-          root.append(paragraphNode);
+    try {
+      editor.update(() => {
+        const root = $getRoot();
+        root.clear();
+        
+        // Convert markdown to Lexical nodes properly
+        if (newText && newText.trim()) {
+          try {
+            $convertFromMarkdownString(newText, TRANSFORMERS);
+            console.log('✅ Successfully converted markdown to Lexical nodes');
+          } catch (markdownError) {
+            console.warn('⚠️ Markdown conversion failed, falling back to plain text:', markdownError);
+            // Fallback to plain text if markdown conversion fails
+            const paragraph = $createParagraphNode();
+            const textNode = $createTextNode(newText);
+            paragraph.append(textNode);
+            root.append(paragraph);
+          }
+        } else {
+          // Create empty paragraph for empty content
+          const paragraph = $createParagraphNode();
+          root.append(paragraph);
+          console.log('📝 Created empty paragraph for empty content');
         }
       });
-    });
+      
+      console.log('✅ Successfully applied changes to editor');
+      
+    } catch (error) {
+      console.error('❌ Error applying changes to editor:', error);
+      // Additional fallback - try to reload the editor with the new content
+      setTimeout(() => {
+        console.log('🔄 Attempting fallback editor update...');
+        try {
+          editor.update(() => {
+            const root = $getRoot();
+            root.clear();
+            const paragraph = $createParagraphNode();
+            const textNode = $createTextNode(newText || '');
+            paragraph.append(textNode);
+            root.append(paragraph);
+          });
+          console.log('✅ Fallback editor update successful');
+        } catch (fallbackError) {
+          console.error('❌ Fallback editor update failed:', fallbackError);
+        }
+      }, 100);
+    }
   };
 
   // Load chat history when document changes
