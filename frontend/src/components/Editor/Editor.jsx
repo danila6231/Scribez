@@ -583,10 +583,7 @@ function Editor() {
             {isSaving && (
               <span className="saving-indicator">Saving...</span>
             )}
-            {hasUnsavedChanges && !isSaving && (
-              <span className="unsaved-indicator">Unsaved changes</span>
-            )}
-            {lastSaved && !isSaving && !hasUnsavedChanges && (
+            {lastSaved && !isSaving && (
               <span className="last-saved">
                 Last saved: {lastSaved.toLocaleTimeString()}
               </span>
@@ -620,13 +617,6 @@ function Editor() {
                 </button>
               </>
             )}
-            <button 
-              onClick={manualSave} 
-              className="manual-save-btn"
-              disabled={isSaving || isLoading}
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
           </div>
         </div>
       </div>
